@@ -23,6 +23,7 @@ class HTTPClient:
     async def close(self):
         if self._session and not self._session.closed:
             await self._session.close()
+            self._session = None
 
     async def get_json(
         self,
