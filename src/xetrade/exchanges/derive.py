@@ -29,6 +29,7 @@ class Derive(BaseExchange):
     """
     name = "derive"
     funding_interval_hours = 1.0
+    supports_funding = True
 
     # ---- symbol formatting ----
     def format_symbol(self, pair: Pair) -> str:
@@ -114,18 +115,9 @@ class Derive(BaseExchange):
     async def get_funding_history(self, pair: Pair, start_ms: int, end_ms: int) -> FundingSeries:
         """
         Historical funding rates for the perpetual swap.
+        Note: dYdX public API doesn't provide historical funding data.
+        Returns empty list to be explicit about the limitation.
         """
-        sym = self.format_symbol(pair)
-        url = f"{BASE_URL}/v3/funding-rates/{sym}"
-        data = await get_json(url)
-        
-        if "fundingRates" not in data or sym not in data["fundingRates"]:
-            raise RuntimeError(f"No funding data returned for {sym}")
-        
-        funding_data = data["fundingRates"][sym]
-        # dYdX doesn't provide historical data in this endpoint
-        # We'll return current rate as a single point
-        cur = float(funding_data.get("rate", 0.0))
-        ts_ms = int(time.time() * 1000)
-        
-        return [FundingPoint(ts_ms=ts_ms, rate=cur)] 
+        # dYdX doesn't provide historical funding data in their public API
+        # Return empty list to be explicit about this limitation
+        return [] 

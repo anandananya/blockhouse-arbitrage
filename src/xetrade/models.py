@@ -1,9 +1,20 @@
 # src/xetrade/models.py
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Literal, Tuple
+from typing import List, Literal, Tuple, Optional
+from enum import Enum
 
 Side = Literal["buy", "sell"]
+OrderType = Literal["LIMIT", "MARKET"]
+PositionSide = Literal["long", "short"]
+
+class OrderStatus(Enum):
+    OPEN = "OPEN"
+    FILLED = "FILLED"
+    CANCELED = "CANCELED"
+    PARTIALLY_FILLED = "PARTIALLY_FILLED"
+    REJECTED = "REJECTED"
+    PENDING = "PENDING"
 
 # ----- Core domain types -----
 
@@ -68,6 +79,97 @@ class OrderBook:
     def mid(self) -> float:
         bb, ba = self.best_bid(), self.best_ask()
         return (bb + ba) / 2.0
+
+
+# ----- Order Management Types -----
+
+@dataclass(frozen=True)
+class OrderRequest:
+    """Request to place an order."""
+    pair: Pair
+    side: Side
+    order_type: OrderType
+    quantity: float          # base asset quantity
+    price: Optional[float]   # required for LIMIT orders
+    time_in_force: str = "GTC"  # Good Till Canceled
+
+@dataclass(frozen=True)
+class OrderResponse:
+    """Response from order placement."""
+    order_id: str
+    venue: str
+    pair: Pair
+    side: Side
+    order_type: OrderType
+    quantity: float
+    price: Optional[float]
+    status: OrderStatus
+    ts_ms: int
+
+@dataclass(frozen=True)
+class OrderStatusResponse:
+    """Response from order status query."""
+    order_id: str
+    venue: str
+    pair: Pair
+    side: Side
+    order_type: OrderType
+    quantity: float
+    filled_quantity: float
+    price: Optional[float]
+    avg_fill_price: Optional[float]
+    status: OrderStatus
+    ts_ms: int
+
+@dataclass(frozen=True)
+class CancelResponse:
+    """Response from order cancellation."""
+    order_id: str
+    venue: str
+    success: bool
+    message: str
+    ts_ms: int
+
+
+# ----- Position & PnL Monitoring Types -----
+
+@dataclass(frozen=True)
+class Position:
+    """Represents a trading position from a filled order."""
+    order_id: str
+    venue: str
+    pair: Pair
+    side: Side
+    entry_timestamp: int      # When the position was opened (ms)
+    entry_price: float        # Average filled price
+    quantity: float           # Position size in base asset
+    position_side: PositionSide  # "long" or "short"
+    ts_ms: int               # Current timestamp
+
+@dataclass(frozen=True)
+class PositionPnL:
+    """Real-time position PnL information."""
+    position: Position
+    current_price: float      # Current market price
+    unrealized_pnl: float     # Unrealized profit/loss in quote currency
+    unrealized_pnl_pct: float # Unrealized PnL as percentage
+    mark_price: float         # Mark price for PnL calculation
+    ts_ms: int               # Timestamp of PnL calculation
+
+    @property
+    def is_profitable(self) -> bool:
+        """Returns True if position is profitable."""
+        return self.unrealized_pnl > 0
+
+    @property
+    def pnl_color(self) -> str:
+        """Returns color indicator for PnL display."""
+        if self.unrealized_pnl > 0:
+            return "green"
+        elif self.unrealized_pnl < 0:
+            return "red"
+        else:
+            return "neutral"
 
 
 # ----- Funding data -----

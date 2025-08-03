@@ -75,6 +75,64 @@ python cli.py funding --venue okx --pair BTC-USDT
 ```
 Returns current and predicted funding rates with APR calculations.
 
+#### `place` - Place Order
+```bash
+# Place a LIMIT order
+python cli.py place --venue okx --pair BTC-USDT --side buy --order-type LIMIT --quantity 0.001 --price 50000
+
+# Place a MARKET order
+python cli.py place --venue okx --pair BTC-USDT --side sell --order-type MARKET --quantity 0.001
+```
+Place LIMIT or MARKET orders on specified venues.
+
+#### `cancel` - Cancel Order
+```bash
+python cli.py cancel --venue okx --pair BTC-USDT --order-id okx_1234567890_1234
+```
+Cancel an existing order by order ID.
+
+#### `status` - Get Order Status
+```bash
+python cli.py status --venue okx --pair BTC-USDT --order-id okx_1234567890_1234
+```
+Get the current status of an order (OPEN, FILLED, CANCELED, etc.).
+
+#### `position` - Get Position Details
+```bash
+python cli.py position --venue okx --pair BTC-USDT --order-id okx_1234567890_1234
+```
+Get position details and real-time PnL from a filled order.
+
+#### `monitor` - Live Position Monitoring
+```bash
+python cli.py monitor --venue okx --pair BTC-USDT --order-id okx_1234567890_1234 --interval 30 --max-updates 5
+```
+Monitor a position live with periodic PnL updates.
+
+#### `map` - Symbol Mapping
+```bash
+python cli.py map --symbol BTCUSDT --exchange binance
+```
+Map exchange-specific symbol to universal format.
+
+#### `universal` - Reverse Symbol Mapping
+```bash
+python cli.py universal --symbol BTC/USDT --exchange binance
+```
+Convert universal symbol to exchange-specific format.
+
+#### `validate` - Symbol Validation
+```bash
+python cli.py validate --exchange-symbol 1000BONK-USD --expected-universal BONK/USD --exchange derive
+```
+Validate symbol mapping.
+
+#### `demo-mapper` - Symbol Mapper Demo
+```bash
+python cli.py demo-mapper
+```
+Demonstrate symbol mapper with comprehensive examples.
+
 ### Programmatic Usage
 
 ```python
@@ -121,11 +179,36 @@ asyncio.run(example())
 - Historical funding rate analysis
 - Multi-interval support (1h, 4h, 8h)
 
+#### Trading Service
+- Unified order placement across exchanges
+- Order cancellation and status tracking
+- Performance monitoring and latency tracking
+- Support for LIMIT and MARKET orders
+
+#### Position Monitor Service
+- Real-time position tracking from filled orders
+- Live PnL calculation and monitoring
+- Position side detection (long/short)
+- Unrealized profit/loss calculations
+
+#### Symbol Mapper Service
+- Universal symbol standardization across exchanges
+- Prefix/suffix normalization (1000BONK → BONK)
+- Separator handling (BTCUSDT vs BTC-USDT)
+- Quote currency classification and normalization
+- Exchange-specific symbol formatting
+
 ### Data Models
 - **Pair**: Trading pair representation (BTC-USDT)
 - **Quote**: Best bid/ask with timestamp
 - **OrderBook**: Full L2 order book with levels
 - **FundingSnapshot**: Current and predicted funding rates
+- **OrderRequest**: Order placement request
+- **OrderResponse**: Order placement response
+- **OrderStatusResponse**: Order status information
+- **CancelResponse**: Order cancellation response
+- **Position**: Trading position from filled order
+- **PositionPnL**: Real-time PnL calculation
 
 ## 🔧 Exchange-Specific Notes
 
@@ -235,6 +318,21 @@ python cli.py impact --venue okx --pair BTC-USDT --side buy --quote 10000
 
 # Test funding rates
 python cli.py funding --venue okx --pair BTC-USDT
+
+# Test trading functionality
+python test_trading.py
+
+# Run performance test (20 orders)
+python quick_performance_test.py
+
+# Run full performance test (200 orders)
+python performance_test.py
+
+# Test position monitoring
+python task3_demo.py
+
+# Test symbol mapper
+python task4_demo.py
 ```
 
 ## 📝 License

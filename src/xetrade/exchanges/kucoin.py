@@ -28,6 +28,7 @@ class KuCoin(BaseExchange):
     """
     name = "kucoin"
     funding_interval_hours = 8.0
+    supports_funding = True
 
     # ---- symbol formatting ----
     def format_symbol(self, pair: Pair) -> str:
@@ -105,20 +106,42 @@ class KuCoin(BaseExchange):
     async def get_funding_history(self, pair: Pair, start_ms: int, end_ms: int) -> FundingSeries:
         """
         Historical funding rates for the perpetual swap.
+        Includes pagination to handle large date ranges.
         """
         sym = self.format_symbol(pair)
         url = f"{BASE_URL}/api/v1/contracts/funding-rates"
-        # KuCoin max limit is 100 per call
-        params = {"symbol": sym, "startAt": start_ms, "endAt": end_ms, "limit": 100}
-        data = await get_json(url, params=params)
-        
-        if data.get("code") != "200000":
-            raise RuntimeError(f"KuCoin API error: {data.get('msg', 'Unknown error')}")
-        
         out: FundingSeries = []
-        for row in data.get("data", []):
-            # row: {'symbol':'BTC-USDT','fundingRate':'0.0001','time':1700000000000}
-            rate = float(row.get("fundingRate", 0.0))
-            ts = int(row.get("time"))
-            out.append(FundingPoint(ts_ms=ts, rate=rate))
+        
+        # Pagination loop
+        current_start = start_ms
+        while current_start < end_ms:
+            params = {
+                "symbol": sym, 
+                "startAt": current_start, 
+                "endAt": end_ms, 
+                "limit": 100  # KuCoin max limit
+            }
+            data = await get_json(url, params=params)
+            
+            if data.get("code") != "200000":
+                raise RuntimeError(f"KuCoin API error: {data.get('msg', 'Unknown error')}")
+            
+            if not data.get("data"):  # No more data
+                break
+                
+            for row in data.get("data", []):
+                # row: {'symbol':'BTC-USDT','fundingRate':'0.0001','time':1700000000000}
+                rate = float(row.get("fundingRate", 0.0))
+                ts = int(row.get("time"))
+                out.append(FundingPoint(ts_ms=ts, rate=rate))
+            
+            # Update start time for next page
+            if data.get("data"):
+                last_ts = int(data["data"][-1].get("time", current_start))
+                if last_ts <= current_start:  # No progress, avoid infinite loop
+                    break
+                current_start = last_ts + 1
+            else:
+                break
+                
         return out 

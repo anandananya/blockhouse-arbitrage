@@ -2,7 +2,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Tuple, Dict, Type
-from xetrade.models import Pair, Quote, OrderBook, FundingSnapshot, FundingSeries
+from xetrade.models import (
+    Pair, Quote, OrderBook, FundingSnapshot, FundingSeries,
+    OrderRequest, OrderResponse, OrderStatusResponse, CancelResponse,
+    Position, PositionPnL
+)
+from xetrade.utils.symbol_mapper import UniversalSymbolMapper
 
 # Common errors
 class ExchangeError(Exception): ...
@@ -20,6 +25,12 @@ class BaseExchange(ABC):
     Keep return types in xetrade.models.
     """
     name: str  # short id like "binance", "okx"
+    
+    # Capability flags for early feature detection
+    supports_spot: bool = True
+    supports_funding: bool = False
+    supports_l2_orderbook: bool = True
+    supports_trading: bool = False  # Order placement, cancellation, status
 
     def __init__(self, *, api_key: str | None = None, api_secret: str | None = None, timeout: float = 10.0):
         self.api_key = api_key
@@ -40,11 +51,53 @@ class BaseExchange(ABC):
     # --- Funding (perps) ---
     async def get_funding_live_predicted(self, pair: Pair) -> FundingSnapshot:
         """Current and predicted next funding for the perp."""
+        if not self.supports_funding:
+            raise FundingNotSupported(f"{self.name} does not support funding")
         raise FundingNotSupported(f"{self.name} does not support funding")
 
     async def get_funding_history(self, pair: Pair, start_ms: int, end_ms: int) -> FundingSeries:
         """Historical funding points in [start_ms, end_ms]."""
+        if not self.supports_funding:
+            raise FundingNotSupported(f"{self.name} does not support funding")
         raise FundingNotSupported(f"{self.name} does not support funding")
+
+    # --- Trading (Order Management) ---
+    async def place_order(self, request: OrderRequest) -> OrderResponse:
+        """Place a new order (LIMIT or MARKET)."""
+        if not self.supports_trading:
+            raise RuntimeError(f"{self.name} does not support trading")
+        raise NotImplementedError
+
+    async def cancel_order(self, order_id: str, pair: Pair) -> CancelResponse:
+        """Cancel an existing order."""
+        if not self.supports_trading:
+            raise RuntimeError(f"{self.name} does not support trading")
+        raise NotImplementedError
+
+    async def get_order_status(self, order_id: str, pair: Pair) -> OrderStatusResponse:
+        """Get the current status of an order."""
+        if not self.supports_trading:
+            raise RuntimeError(f"{self.name} does not support trading")
+        raise NotImplementedError
+
+    # --- Position Monitoring ---
+    async def get_position_from_order(self, order_id: str, pair: Pair) -> Optional[Position]:
+        """
+        Get position details from a filled order.
+        Returns None if order is not filled or position not found.
+        """
+        if not self.supports_trading:
+            raise RuntimeError(f"{self.name} does not support trading")
+        raise NotImplementedError
+
+    async def calculate_position_pnl(self, position: Position) -> Optional[PositionPnL]:
+        """
+        Calculate real-time PnL for a position.
+        Returns None if unable to calculate (e.g., no current price).
+        """
+        if not self.supports_trading:
+            raise RuntimeError(f"{self.name} does not support trading")
+        raise NotImplementedError
 
     # --- Helpers overridable per exchange ---
     def format_symbol(self, pair: Pair) -> str:
@@ -54,6 +107,20 @@ class BaseExchange(ABC):
         """
         p = normalize_pair(pair)
         return f"{p.base}{p.quote}"
+    
+    def get_universal_symbol(self, exchange_symbol: str) -> str:
+        """
+        Convert exchange-specific symbol to universal format.
+        """
+        mapper = UniversalSymbolMapper()
+        return mapper.normalize_symbol(exchange_symbol, self.name)
+    
+    def get_exchange_symbol(self, universal_symbol: str) -> str:
+        """
+        Convert universal symbol to exchange-specific format.
+        """
+        mapper = UniversalSymbolMapper()
+        return mapper.get_exchange_symbol(universal_symbol, self.name)
 
 # -------- Registry for easy wiring (used by CLI/services) --------
 

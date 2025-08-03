@@ -1,6 +1,7 @@
 # src/services/aggregator.py
 from __future__ import annotations
 import asyncio
+import time
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Tuple
 
@@ -16,14 +17,24 @@ async def best_on_venue(ex: BaseExchange, pair: Pair) -> VenueQuote:
     q = await ex.get_best_bid_ask(pair)
     return VenueQuote(ex.name, q)
 
-async def gather_quotes(exchanges: Iterable[BaseExchange], pair: Pair) -> List[VenueQuote]:
+async def gather_quotes(exchanges: Iterable[BaseExchange], pair: Pair, max_age_ms: int = 30000) -> List[VenueQuote]:
+    """
+    Gather quotes from all exchanges with staleness filtering.
+    max_age_ms: Maximum age of quotes in milliseconds (default 30 seconds)
+    """
     tasks = [asyncio.create_task(best_on_venue(ex, pair)) for ex in exchanges]
     results: List[VenueQuote] = []
+    current_time = int(time.time() * 1000)
+    
     for t in asyncio.as_completed(tasks):
         try:
-            results.append(await t)
-        except Exception:
-            # You might log errors per venue here; we skip failed venues
+            vq = await t
+            # Filter out stale quotes
+            if current_time - vq.quote.ts_ms <= max_age_ms:
+                results.append(vq)
+            # Could log stale quotes here
+        except Exception as e:
+            # Could log specific venue errors here
             pass
     return results
 

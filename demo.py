@@ -24,6 +24,12 @@ async def demo():
     print(f"🎯 Testing pair: {pair.human()}")
     print(f"🏢 Using venues: {', '.join(venues)}")
     
+    # Show exchange capabilities
+    print("\n🔧 Exchange Capabilities:")
+    for ex in exchanges:
+        funding_support = "✅" if ex.supports_funding else "❌"
+        print(f"   {ex.name}: funding={funding_support}")
+    
     try:
         # 1. Best bid/ask across venues
         print("\n1️⃣ Best Bid/Ask Across Venues")
@@ -35,6 +41,8 @@ async def demo():
             print(f"✅ Best ask: {result['best_ask']['venue']} @ ${result['best_ask']['price']:,.2f}")
             print(f"✅ Mid price: ${result['mid']:,.2f}")
             print(f"📈 Spread: ${result['best_ask']['price'] - result['best_bid']['price']:,.2f}")
+            print(f"📊 Venues queried: {result.get('venues_queried', len(exchanges))}")
+            print(f"📊 Venues with data: {result.get('venues_with_data', len(result.get('all', [])))}")
         else:
             print("❌ No valid quotes received")
         

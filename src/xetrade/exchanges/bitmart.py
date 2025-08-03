@@ -28,6 +28,7 @@ class Bitmart(BaseExchange):
     """
     name = "bitmart"
     funding_interval_hours = 8.0
+    supports_funding = False  # Spot only
 
     # ---- symbol formatting ----
     def format_symbol(self, pair: Pair) -> str:

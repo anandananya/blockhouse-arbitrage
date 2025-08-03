@@ -30,6 +30,7 @@ class Binance(BaseExchange):
     """
     name = "binance"
     funding_interval_hours = 8.0
+    supports_funding = True
 
     # ---- symbol formatting ----
     def format_symbol(self, pair: Pair) -> str:
@@ -84,16 +85,39 @@ class Binance(BaseExchange):
     async def get_funding_history(self, pair: Pair, start_ms: int, end_ms: int) -> FundingSeries:
         """
         Historical funding rates for the perpetual swap.
+        Includes pagination to handle large date ranges.
         """
         sym = self.format_symbol(pair)
         url = f"{FUTURES_BASE}/fapi/v1/fundingRate"
-        # Binance max limit is 1000 per call. Callers can loop if they need more.
-        params = {"symbol": sym, "startTime": start_ms, "endTime": end_ms, "limit": 1000}
-        data = await get_json(url, params=params)
         out: FundingSeries = []
-        for row in data:
-            # row: {'symbol':'BTCUSDT','fundingRate':'0.0001','fundingTime': 1700000000000, ...}
-            rate = float(row.get("fundingRate", 0.0))
-            ts = int(row.get("fundingTime"))
-            out.append(FundingPoint(ts_ms=ts, rate=rate))
+        
+        # Pagination loop
+        current_start = start_ms
+        while current_start < end_ms:
+            params = {
+                "symbol": sym, 
+                "startTime": current_start, 
+                "endTime": end_ms, 
+                "limit": 1000  # Binance max limit
+            }
+            data = await get_json(url, params=params)
+            
+            if not data:  # No more data
+                break
+                
+            for row in data:
+                # row: {'symbol':'BTCUSDT','fundingRate':'0.0001','fundingTime': 1700000000000, ...}
+                rate = float(row.get("fundingRate", 0.0))
+                ts = int(row.get("fundingTime"))
+                out.append(FundingPoint(ts_ms=ts, rate=rate))
+            
+            # Update start time for next page
+            if data:
+                last_ts = int(data[-1].get("fundingTime", current_start))
+                if last_ts <= current_start:  # No progress, avoid infinite loop
+                    break
+                current_start = last_ts + 1
+            else:
+                break
+                
         return out
