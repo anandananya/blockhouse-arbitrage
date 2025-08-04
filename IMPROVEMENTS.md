@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to address the issues identified in the code review.
 
-## ✅ Implemented Improvements
+##  Implemented Improvements
 
 ### 1. **Capability Flags**
 - **Added**: `supports_funding`, `supports_spot`, `supports_l2_orderbook` flags to `BaseExchange`
@@ -36,7 +36,7 @@ This document summarizes the improvements made to address the issues identified 
 - **Added**: Support flags in funding command output
 - **Benefit**: More informative responses for debugging and monitoring
 
-## 🔧 Technical Details
+##  Technical Details
 
 ### Capability Flags
 ```python
@@ -65,30 +65,30 @@ while current_start < end_ms:
     # Break if no progress or no more data
 ```
 
-## 📊 Testing Results
+##  Testing Results
 
 ### Before Improvements
-- ❌ No capability detection
-- ❌ Stale quotes could affect results
-- ❌ Single venue failure crashed entire command
-- ❌ Limited funding history due to pagination
-- ❌ Misleading dYdX historical data
+-  No capability detection
+-  Stale quotes could affect results
+-  Single venue failure crashed entire command
+-  Limited funding history due to pagination
+-  Misleading dYdX historical data
 
 ### After Improvements
-- ✅ Early capability detection with clear error messages
-- ✅ 30-second staleness filter prevents old data
-- ✅ Graceful error handling per venue
-- ✅ Full pagination for large date ranges
-- ✅ Explicit dYdX limitations
+-  Early capability detection with clear error messages
+-  30-second staleness filter prevents old data
+-  Graceful error handling per venue
+-  Full pagination for large date ranges
+-  Explicit dYdX limitations
 
-## 🚀 Performance Improvements
+##  Performance Improvements
 
 1. **Faster Failures**: Capability flags prevent unnecessary API calls
 2. **Better Reliability**: Staleness filtering ensures data quality
 3. **Robust Error Handling**: System continues working even with partial failures
 4. **Complete Data**: Pagination ensures full historical data retrieval
 
-## 📈 Monitoring Enhancements
+##  Monitoring Enhancements
 
 The CLI now provides better visibility:
 ```json
@@ -101,7 +101,7 @@ The CLI now provides better visibility:
 }
 ```
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
 Based on the review, additional improvements could include:
 
@@ -111,15 +111,15 @@ Based on the review, additional improvements could include:
 4. **Validation**: Input validation for date ranges and trade sizes
 5. **Logging**: Structured logging for debugging and monitoring
 
-## ✅ Verification
+##  Verification
 
 All improvements have been tested and verified:
 
-- ✅ Capability flags work correctly
-- ✅ Staleness filtering prevents old data
-- ✅ Error handling is graceful
-- ✅ Pagination retrieves complete datasets
-- ✅ CLI provides better visibility
-- ✅ dYdX limitations are explicit
+-  Capability flags work correctly
+-  Staleness filtering prevents old data
+-  Error handling is graceful
+-  Pagination retrieves complete datasets
+-  CLI provides better visibility
+-  dYdX limitations are explicit
 
 The system is now more robust, reliable, and production-ready. 

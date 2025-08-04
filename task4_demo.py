@@ -17,13 +17,13 @@ from xetrade.utils.symbol_mapper import UniversalSymbolMapper
 
 def task4_demo():
     """Demonstrate Task 4: Universal Symbol Mapper."""
-    print("🎯 Task 4: Universal Symbol Mapper Demo")
+    print(" Task 4: Universal Symbol Mapper Demo")
     print("=" * 60)
     
     mapper = UniversalSymbolMapper()
     
     # Step 1: Demonstrate the main requirement
-    print("1️⃣ Main Requirement: 1000BONK-USD vs BONK-USDT")
+    print("1 Main Requirement: 1000BONK-USD vs BONK-USDT")
     print("-" * 50)
     
     test_cases = [
@@ -33,18 +33,18 @@ def task4_demo():
     
     for exchange_symbol, exchange in test_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        print(f"🔗 {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
+        print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
         print(f"   Base Asset: {mapping.base_asset}")
         print(f"   Quote Asset: {mapping.quote_asset}")
         print(f"   Quote Type: {mapping.quote_type.value}")
         print(f"   Confidence: {mapping.confidence:.2f}")
         print()
     
-    print("✅ Both symbols map to the same underlying asset (BONK) with USD-equivalent quote!")
+    print(" Both symbols map to the same underlying asset (BONK) with USD-equivalent quote!")
     print()
     
     # Step 2: Demonstrate prefix handling
-    print("2️⃣ Prefix Variations")
+    print("2 Prefix Variations")
     print("-" * 30)
     
     prefix_cases = [
@@ -56,12 +56,12 @@ def task4_demo():
     
     for exchange_symbol, exchange in prefix_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        print(f"🔗 {exchange_symbol} → {mapping.universal_symbol}")
+        print(f" {exchange_symbol} → {mapping.universal_symbol}")
         print(f"   Stripped prefix: {exchange_symbol.split('-')[0]} → {mapping.base_asset}")
         print()
     
     # Step 3: Demonstrate separator handling
-    print("3️⃣ Separator Variations")
+    print("3 Separator Variations")
     print("-" * 30)
     
     separator_cases = [
@@ -73,11 +73,11 @@ def task4_demo():
     
     for exchange_symbol, exchange in separator_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        print(f"🔗 {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
+        print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
         print()
     
     # Step 4: Demonstrate quote currency normalization
-    print("4️⃣ Quote Currency Normalization")
+    print("4 Quote Currency Normalization")
     print("-" * 35)
     
     quote_cases = [
@@ -90,26 +90,26 @@ def task4_demo():
     
     for exchange_symbol, exchange in quote_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        print(f"🔗 {exchange_symbol} → {mapping.universal_symbol}")
+        print(f" {exchange_symbol} → {mapping.universal_symbol}")
         print(f"   Quote Type: {mapping.quote_type.value}")
         print()
     
     # Step 5: Demonstrate reverse mapping
-    print("5️⃣ Reverse Mapping (Universal → Exchange)")
+    print("5 Reverse Mapping (Universal → Exchange)")
     print("-" * 40)
     
     universal_symbols = ["BONK/USD", "BTC/USDT", "ETH/USD", "SOL/USDT"]
     exchanges = ["binance", "okx", "derive", "kucoin", "bitmart"]
     
     for universal_symbol in universal_symbols:
-        print(f"📋 {universal_symbol}:")
+        print(f" {universal_symbol}:")
         for exchange in exchanges:
             exchange_symbol = mapper.get_exchange_symbol(universal_symbol, exchange)
             print(f"   {exchange}: {exchange_symbol}")
         print()
     
     # Step 6: Demonstrate confidence scoring
-    print("6️⃣ Confidence Scoring")
+    print("6 Confidence Scoring")
     print("-" * 25)
     
     confidence_cases = [
@@ -122,13 +122,13 @@ def task4_demo():
     
     for exchange_symbol, exchange in confidence_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        confidence_level = "🟢 High" if mapping.confidence > 0.8 else "🟡 Medium" if mapping.confidence > 0.5 else "🔴 Low"
-        print(f"🔗 {exchange_symbol} → {mapping.universal_symbol}")
+        confidence_level = " High" if mapping.confidence > 0.8 else " Medium" if mapping.confidence > 0.5 else " Low"
+        print(f" {exchange_symbol} → {mapping.universal_symbol}")
         print(f"   Confidence: {mapping.confidence:.2f} ({confidence_level})")
         print()
     
     # Step 7: Demonstrate validation
-    print("7️⃣ Symbol Validation")
+    print("7 Symbol Validation")
     print("-" * 20)
     
     validation_cases = [
@@ -140,22 +140,22 @@ def task4_demo():
     
     for exchange_symbol, expected_universal, exchange, should_be_valid in validation_cases:
         is_valid = mapper.validate_mapping(exchange_symbol, expected_universal, exchange)
-        status = "✅ PASS" if is_valid == should_be_valid else "❌ FAIL"
-        print(f"🔗 {exchange_symbol} → {expected_universal} ({exchange}): {is_valid} {status}")
+        status = " PASS" if is_valid == should_be_valid else " FAIL"
+        print(f" {exchange_symbol} → {expected_universal} ({exchange}): {is_valid} {status}")
         print()
     
     # Step 8: Demonstrate quote currency classification
-    print("8️⃣ Quote Currency Classification")
+    print("8 Quote Currency Classification")
     print("-" * 35)
     
     quote_types = mapper.get_all_quote_types()
     for quote_type, currencies in quote_types.items():
-        print(f"📊 {quote_type.value}: {', '.join(currencies)}")
+        print(f" {quote_type.value}: {', '.join(currencies)}")
     
     print()
     
     # Step 9: JSON output for API integration
-    print("9️⃣ JSON Output for API Integration")
+    print("9 JSON Output for API Integration")
     print("-" * 35)
     
     # Demonstrate comprehensive mapping with JSON output
@@ -180,20 +180,20 @@ def task4_demo():
             "exchange": exchange
         })
     
-    print("📋 Comprehensive Symbol Mapping Results:")
+    print(" Comprehensive Symbol Mapping Results:")
     print(json.dumps(results, indent=2))
     
-    print(f"\n✅ Task 4 Demo Completed!")
-    print(f"📊 All requirements implemented:")
-    print(f"   ✅ Universal symbol mapping function")
-    print(f"   ✅ Prefix variations (1000BONK → BONK)")
-    print(f"   ✅ Suffix variations (-USD vs -USDT)")
-    print(f"   ✅ Separator variations (BTCUSDT vs BTC-USDT)")
-    print(f"   ✅ Quote currency normalization")
-    print(f"   ✅ Exchange-specific patterns")
-    print(f"   ✅ Confidence scoring")
-    print(f"   ✅ Validation capabilities")
-    print(f"   ✅ Reverse mapping (universal → exchange)")
+    print(f"\n Task 4 Demo Completed!")
+    print(f" All requirements implemented:")
+    print(f"    Universal symbol mapping function")
+    print(f"    Prefix variations (1000BONK → BONK)")
+    print(f"    Suffix variations (-USD vs -USDT)")
+    print(f"    Separator variations (BTCUSDT vs BTC-USDT)")
+    print(f"    Quote currency normalization")
+    print(f"    Exchange-specific patterns")
+    print(f"    Confidence scoring")
+    print(f"    Validation capabilities")
+    print(f"    Reverse mapping (universal → exchange)")
 
 if __name__ == "__main__":
     task4_demo() 

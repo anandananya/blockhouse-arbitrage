@@ -3,16 +3,32 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-from typing import List
+from typing import List, Optional
 
 from xetrade.models import Pair, OrderRequest, OrderStatus
 from xetrade.services.aggregator import best_across_venues
 from xetrade.services.price_impact import price_impact_pct, walk_book
 from xetrade.services.trading import UnifiedTradingService
 from xetrade.services.position_monitor import PositionMonitorService
+from xetrade.services.historical_data import DataCaptureManager, LocalFileStorage, S3ParquetStorage
 from xetrade.utils.symbol_mapper import UniversalSymbolMapper
 from xetrade.exchanges.base import make_exchanges, available_exchanges
 from xetrade.exchanges import binance  # noqa: F401  # ensure registry side-effect
+from xetrade.exchanges import mock  # noqa: F401  # ensure registry side-effect
+
+# Global data capture manager
+data_capture_manager: Optional[DataCaptureManager] = None
+
+def get_data_capture_manager(storage_type: str = "local") -> DataCaptureManager:
+    """Get or create the global data capture manager."""
+    global data_capture_manager
+    if data_capture_manager is None:
+        if storage_type == "s3":
+            storage = S3ParquetStorage(mock_mode=True)  # Mock mode for interview
+        else:
+            storage = LocalFileStorage("./data")
+        data_capture_manager = DataCaptureManager(storage)
+    return data_capture_manager
 
 async def cmd_best(args):
     pair = Pair.parse(args.pair)
@@ -243,9 +259,9 @@ async def cmd_monitor(args):
     exchanges = make_exchanges([args.venue])
     position_service = PositionMonitorService(exchanges)
     
-    print(f"🔍 Monitoring position for order {args.order_id}")
-    print(f"📊 Venue: {args.venue}, Pair: {pair.human()}")
-    print(f"⏱️  Update interval: {args.interval}s, Max updates: {args.max_updates}")
+    print(f" Monitoring position for order {args.order_id}")
+    print(f" Venue: {args.venue}, Pair: {pair.human()}")
+    print(f"  Update interval: {args.interval}s, Max updates: {args.max_updates}")
     print("=" * 60)
     
     try:
@@ -255,7 +271,7 @@ async def cmd_monitor(args):
         )
         
         for i, result in enumerate(results, 1):
-            print(f"\n📈 Update {i}/{len(results)}:")
+            print(f"\n Update {i}/{len(results)}:")
             if result.success and result.position and result.pnl:
                 position = result.position
                 pnl = result.pnl
@@ -265,26 +281,26 @@ async def cmd_monitor(args):
                 entry_time = datetime.datetime.fromtimestamp(position.entry_timestamp / 1000)
                 pnl_time = datetime.datetime.fromtimestamp(pnl.ts_ms / 1000)
                 
-                print(f"   🏢 Venue: {position.venue}")
-                print(f"   📊 Pair: {position.pair.human()}")
-                print(f"   📅 Entry Time: {entry_time}")
-                print(f"   💰 Entry Price: ${position.entry_price:,.2f}")
-                print(f"   📏 Quantity: {position.quantity}")
-                print(f"   📈 Position Side: {position.position_side.upper()}")
-                print(f"   💵 Current Price: ${pnl.current_price:,.2f}")
-                print(f"   📊 Mark Price: ${pnl.mark_price:,.2f}")
-                print(f"   💸 Unrealized PnL: ${pnl.unrealized_pnl:,.2f} ({pnl.unrealized_pnl_pct:+.2f}%)")
-                print(f"   🎯 Status: {'🟢 PROFIT' if pnl.is_profitable else '🔴 LOSS' if pnl.unrealized_pnl < 0 else '⚪ BREAKEVEN'}")
-                print(f"   ⏱️  Latency: {result.latency_ms:.2f}ms")
-                print(f"   🕐 PnL Time: {pnl_time}")
+                print(f"    Venue: {position.venue}")
+                print(f"    Pair: {position.pair.human()}")
+                print(f"    Entry Time: {entry_time}")
+                print(f"    Entry Price: ${position.entry_price:,.2f}")
+                print(f"    Quantity: {position.quantity}")
+                print(f"    Position Side: {position.position_side.upper()}")
+                print(f"    Current Price: ${pnl.current_price:,.2f}")
+                print(f"    Mark Price: ${pnl.mark_price:,.2f}")
+                print(f"    Unrealized PnL: ${pnl.unrealized_pnl:,.2f} ({pnl.unrealized_pnl_pct:+.2f}%)")
+                print(f"    Status: {' PROFIT' if pnl.is_profitable else ' LOSS' if pnl.unrealized_pnl < 0 else ' BREAKEVEN'}")
+                print(f"     Latency: {result.latency_ms:.2f}ms")
+                print(f"    PnL Time: {pnl_time}")
             else:
-                print(f"   ❌ Error: {result.error}")
-                print(f"   ⏱️  Latency: {result.latency_ms:.2f}ms")
+                print(f"    Error: {result.error}")
+                print(f"     Latency: {result.latency_ms:.2f}ms")
         
-        print(f"\n✅ Monitoring completed. Total updates: {len(results)}")
+        print(f"\n Monitoring completed. Total updates: {len(results)}")
         
     except Exception as e:
-        print(f"❌ Monitoring error: {e}")
+        print(f" Monitoring error: {e}")
         return 1
     return 0
 
@@ -351,7 +367,7 @@ async def cmd_validate_mapping(args):
             "exchange_symbol": args.exchange_symbol,
             "expected_universal": args.expected_universal,
             "exchange": args.exchange
-        }, indent=2))
+    }, indent=2))
         return 1
     return 0
 
@@ -359,7 +375,7 @@ async def cmd_demo_mapper(args):
     """Demonstrate symbol mapper with examples."""
     mapper = UniversalSymbolMapper()
     
-    print("🎯 Universal Symbol Mapper Demo")
+    print(" Universal Symbol Mapper Demo")
     print("=" * 50)
     
     # Test cases from the requirements
@@ -376,44 +392,140 @@ async def cmd_demo_mapper(args):
         ("XBT-USDT", "okx"),  # XBT is sometimes used for Bitcoin
     ]
     
-    print("📊 Symbol Mapping Examples:")
+    print(" Symbol Mapping Examples:")
     print("-" * 30)
     
     for exchange_symbol, exchange in test_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
-        print(f"🔗 {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
+        print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
         print(f"   Base: {mapping.base_asset}, Quote: {mapping.quote_asset}")
         print(f"   Quote Type: {mapping.quote_type.value}, Confidence: {mapping.confidence:.2f}")
         print()
     
     # Demonstrate reverse mapping
-    print("🔄 Reverse Mapping Examples:")
+    print(" Reverse Mapping Examples:")
     print("-" * 30)
     
     universal_symbols = ["BONK/USD", "BTC/USDT", "ETH/USD", "SOL/USDT"]
     exchanges = ["binance", "okx", "derive", "kucoin"]
     
     for universal_symbol in universal_symbols:
-        print(f"📋 {universal_symbol}:")
+        print(f" {universal_symbol}:")
         for exchange in exchanges:
             exchange_symbol = mapper.get_exchange_symbol(universal_symbol, exchange)
             print(f"   {exchange}: {exchange_symbol}")
         print()
     
     # Demonstrate quote currency classification
-    print("💰 Quote Currency Classification:")
+    print(" Quote Currency Classification:")
     print("-" * 30)
     
     quote_types = mapper.get_all_quote_types()
     for quote_type, currencies in quote_types.items():
-        print(f"📊 {quote_type.value}: {', '.join(currencies)}")
+        print(f" {quote_type.value}: {', '.join(currencies)}")
     
-    print(f"\n✅ Demo completed! The mapper handles:")
-    print("   ✅ Prefix variations (1000BONK → BONK)")
-    print("   ✅ Suffix variations (-USD vs -USDT)")
-    print("   ✅ Separator variations (BTCUSDT vs BTC-USDT)")
-    print("   ✅ Quote currency normalization")
-    print("   ✅ Exchange-specific patterns")
+    print(f"\n Demo completed! The mapper handles:")
+    print("    Prefix variations (1000BONK → BONK)")
+    print("    Suffix variations (-USD vs -USDT)")
+    print("    Separator variations (BTCUSDT vs BTC-USDT)")
+    print("    Quote currency normalization")
+    print("    Exchange-specific patterns")
+
+async def cmd_start_capture(args):
+    """Start historical data capture for specified pairs."""
+    storage_type = getattr(args, 'storage', 'local')
+    manager = get_data_capture_manager(storage_type)
+    exchanges = make_exchanges([args.venue])
+    pairs = [Pair.parse(pair) for pair in args.pairs.split(",")]
+    
+    try:
+        session_id = f"{args.venue}_{args.pairs.replace(',', '_')}"
+        service = await manager.start_capture_session(
+            session_id=session_id,
+            exchanges=exchanges,
+            pairs=pairs,
+            interval_seconds=args.interval,
+            max_duration_minutes=args.duration
+        )
+        
+        print(json.dumps({
+            "success": True,
+            "session_id": session_id,
+            "venue": args.venue,
+            "pairs": args.pairs,
+            "interval_seconds": args.interval,
+            "max_duration_minutes": args.duration,
+            "storage_type": storage_type,
+            "status": "Capture started",
+        }, indent=2))
+    except Exception as e:
+        print(json.dumps({
+            "error": str(e),
+            "venue": args.venue,
+            "pairs": args.pairs,
+        }, indent=2))
+        return 1
+    return 0
+
+async def cmd_stop_capture(args):
+    """Stop historical data capture."""
+    manager = get_data_capture_manager()
+    
+    try:
+        if args.session_id:
+            await manager.stop_capture_session(args.session_id)
+            print(json.dumps({
+                "success": True,
+                "session_id": args.session_id,
+                "status": "Capture stopped",
+            }, indent=2))
+        else:
+            await manager.stop_all_sessions()
+            print(json.dumps({
+                "success": True,
+                "status": "All capture sessions stopped",
+            }, indent=2))
+    except Exception as e:
+        print(json.dumps({
+            "error": str(e),
+            "session_id": args.session_id if args.session_id else "all",
+        }, indent=2))
+        return 1
+    return 0
+
+async def cmd_capture_status(args):
+    """Get the status of historical data capture."""
+    manager = get_data_capture_manager()
+    
+    try:
+        if args.session_id:
+            stats = manager.get_session_statistics(args.session_id)
+            if stats:
+                print(json.dumps({
+                    "session_id": args.session_id,
+                    "running": stats["running"],
+                    "sequence_counters": stats["sequence_counters"],
+                }, indent=2))
+            else:
+                print(json.dumps({
+                    "error": "Session not found",
+                    "session_id": args.session_id,
+                }, indent=2))
+                return 1
+        else:
+            # List all sessions
+            sessions = list(manager.services.keys())
+            print(json.dumps({
+                "active_sessions": sessions,
+                "total_sessions": len(sessions),
+            }, indent=2))
+    except Exception as e:
+        print(json.dumps({
+            "error": str(e),
+            "session_id": args.session_id if args.session_id else "all",
+        }, indent=2))
+        return 1
+    return 0
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="xetrade", description="Simple crypto market CLI")
@@ -503,6 +615,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_demo = sub.add_parser("demo-mapper", help="Demonstrate symbol mapper with examples")
     p_demo.set_defaults(func=cmd_demo_mapper)
+
+    # data capture commands
+    p_start_capture = sub.add_parser("start-capture", help="Start historical data capture")
+    p_start_capture.add_argument("--venue", required=True, help="e.g., binance")
+    p_start_capture.add_argument("--pairs", required=True, help="e.g., BTC-USDT,ETH-USDT")
+    p_start_capture.add_argument("--interval", type=float, default=1.0, help="Capture interval in seconds")
+    p_start_capture.add_argument("--duration", type=int, help="Maximum duration in minutes (optional)")
+    p_start_capture.add_argument("--storage", choices=["local", "s3"], default="local", help="Storage backend (default: local)")
+    p_start_capture.set_defaults(func=cmd_start_capture)
+
+    p_stop_capture = sub.add_parser("stop-capture", help="Stop historical data capture")
+    p_stop_capture.add_argument("--session-id", help="Specific session ID to stop (optional)")
+    p_stop_capture.set_defaults(func=cmd_stop_capture)
+
+    p_capture_status = sub.add_parser("capture-status", help="Get status of historical data capture")
+    p_capture_status.add_argument("--session-id", help="Specific session ID to check (optional)")
+    p_capture_status.set_defaults(func=cmd_capture_status)
 
     return p
 

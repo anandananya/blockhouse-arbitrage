@@ -105,11 +105,11 @@ class Binance(BaseExchange):
             if not data:  # No more data
                 break
                 
-            for row in data:
-                # row: {'symbol':'BTCUSDT','fundingRate':'0.0001','fundingTime': 1700000000000, ...}
-                rate = float(row.get("fundingRate", 0.0))
-                ts = int(row.get("fundingTime"))
-                out.append(FundingPoint(ts_ms=ts, rate=rate))
+        for row in data:
+            # row: {'symbol':'BTCUSDT','fundingRate':'0.0001','fundingTime': 1700000000000, ...}
+            rate = float(row.get("fundingRate", 0.0))
+            ts = int(row.get("fundingTime"))
+            out.append(FundingPoint(ts_ms=ts, rate=rate))
             
             # Update start time for next page
             if data:

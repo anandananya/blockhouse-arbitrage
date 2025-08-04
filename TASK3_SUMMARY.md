@@ -1,23 +1,23 @@
 # Task 3: Position & PnL Monitoring - Implementation Summary
 
-## ✅ **Requirements Implemented**
+##  **Requirements Implemented**
 
 ### 1. **Position Monitoring Function**
-- ✅ **Function**: `get_position_from_order()` in `PositionMonitorService`
-- ✅ **Input**: OrderID of a filled order
-- ✅ **Output**: Structured object with all required fields
-- ✅ **Real-time**: Live position details and PnL calculation
+-  **Function**: `get_position_from_order()` in `PositionMonitorService`
+-  **Input**: OrderID of a filled order
+-  **Output**: Structured object with all required fields
+-  **Real-time**: Live position details and PnL calculation
 
 ### 2. **Required Fields Implemented**
-- ✅ **connector_name**: Exchange name (e.g., "okx")
-- ✅ **pair_name**: Trading pair (e.g., "BTC-USDT")
-- ✅ **entry_timestamp**: When position was opened (milliseconds)
-- ✅ **entry_price**: Average filled price from the order
-- ✅ **quantity**: Position size in base asset
-- ✅ **position_side**: "long" or "short" based on order side
-- ✅ **NetPnL**: Real-time calculation of unrealized profit/loss
+-  **connector_name**: Exchange name (e.g., "okx")
+-  **pair_name**: Trading pair (e.g., "BTC-USDT")
+-  **entry_timestamp**: When position was opened (milliseconds)
+-  **entry_price**: Average filled price from the order
+-  **quantity**: Position size in base asset
+-  **position_side**: "long" or "short" based on order side
+-  **NetPnL**: Real-time calculation of unrealized profit/loss
 
-## 🏗 **Architecture Overview**
+##  **Architecture Overview**
 
 ### **Core Components**
 
@@ -70,7 +70,7 @@ python cli.py position --venue okx --pair BTC-USDT --order-id okx_1234567890_123
 python cli.py monitor --venue okx --pair BTC-USDT --order-id okx_1234567890_1234 --interval 30 --max-updates 5
 ```
 
-## 📊 **PnL Calculation Logic**
+##  **PnL Calculation Logic**
 
 ### **Long Position (Buy Order)**
 ```
@@ -96,7 +96,7 @@ Unrealized PnL: $63,360 × 0.001 = $63.36
 PnL %: ($63.36 / ($50,000 × 0.001)) × 100 = +126.72%
 ```
 
-## 🚀 **Demo Results**
+##  **Demo Results**
 
 ### **Position Details**
 ```json
@@ -119,27 +119,27 @@ PnL %: ($63.36 / ($50,000 × 0.001)) × 100 = +126.72%
 
 ### **Live Monitoring Output**
 ```
-📈 Update 1/3:
-   🏢 Venue: okx
-   📊 Pair: BTC-USDT
-   📅 Entry Time: 2025-08-02 18:32:36
-   💰 Entry Price: $49,624.13
-   📏 Quantity: 0.001
-   📈 Position Side: LONG
-   💵 Current Price: $113,360.25
-   📊 Mark Price: $113,360.25
-   💸 Unrealized PnL: $63.74 (+128.44%)
-   🎯 Status: 🟢 PROFIT
-   ⏱️  Latency: 200.74ms
+ Update 1/3:
+    Venue: okx
+    Pair: BTC-USDT
+    Entry Time: 2025-08-02 18:32:36
+    Entry Price: $49,624.13
+    Quantity: 0.001
+    Position Side: LONG
+    Current Price: $113,360.25
+    Mark Price: $113,360.25
+    Unrealized PnL: $63.74 (+128.44%)
+    Status:  PROFIT
+     Latency: 200.74ms
 ```
 
-## 🔧 **Exchange Implementation**
+##  **Exchange Implementation**
 
 ### **OKX Exchange** (`src/xetrade/exchanges/okx.py`)
-- ✅ **Position Creation**: Mock implementation with realistic position data
-- ✅ **PnL Calculation**: Real-time calculation using current market prices
-- ✅ **Position Side Detection**: Automatic long/short detection from order side
-- ✅ **Market Data Integration**: Uses live bid/ask prices for PnL calculation
+-  **Position Creation**: Mock implementation with realistic position data
+-  **PnL Calculation**: Real-time calculation using current market prices
+-  **Position Side Detection**: Automatic long/short detection from order side
+-  **Market Data Integration**: Uses live bid/ask prices for PnL calculation
 
 ### **Key Features**
 - **Real-time PnL**: Calculated using current market prices
@@ -147,7 +147,7 @@ PnL %: ($63.36 / ($50,000 × 0.001)) × 100 = +126.72%
 - **Error Handling**: Graceful handling of missing data or API failures
 - **Performance Monitoring**: Latency tracking for all operations
 
-## 📈 **Key Features**
+##  **Key Features**
 
 ### **1. Real-time PnL Calculation**
 - Uses current market prices from exchange APIs
@@ -172,7 +172,7 @@ PnL %: ($63.36 / ($50,000 × 0.001)) × 100 = +126.72%
 - JSON output for API integration
 - Human-readable CLI output
 
-## 🧪 **Testing Capabilities**
+##  **Testing Capabilities**
 
 ### **Unit Tests**
 ```bash
@@ -203,14 +203,14 @@ summary = await position_service.get_position_summary("order_id", pair, "okx")
 print(f"PnL: ${summary['unrealized_pnl']:,.2f} ({summary['unrealized_pnl_pct']:+.2f}%)")
 ```
 
-## 🎯 **Production Readiness**
+##  **Production Readiness**
 
 ### **Strengths**
-- ✅ **Real-time Calculation**: Uses live market prices
-- ✅ **Comprehensive Data**: All required fields implemented
-- ✅ **Error Handling**: Graceful handling of failures
-- ✅ **Performance**: Sub-second latency for PnL calculations
-- ✅ **Extensible**: Easy to add new exchanges
+-  **Real-time Calculation**: Uses live market prices
+-  **Comprehensive Data**: All required fields implemented
+-  **Error Handling**: Graceful handling of failures
+-  **Performance**: Sub-second latency for PnL calculations
+-  **Extensible**: Easy to add new exchanges
 
 ### **Areas for Enhancement**
 - **Real API Integration**: Currently using mock implementations
@@ -219,7 +219,7 @@ print(f"PnL: ${summary['unrealized_pnl']:,.2f} ({summary['unrealized_pnl_pct']:+
 - **Historical PnL**: Track realized vs unrealized PnL
 - **Risk Management**: Position size limits and alerts
 
-## 📈 **Demonstration**
+##  **Demonstration**
 
 The system successfully demonstrates:
 1. **Position Creation**: From filled orders with realistic data

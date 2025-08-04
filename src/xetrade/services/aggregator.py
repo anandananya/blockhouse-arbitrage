@@ -57,17 +57,31 @@ async def best_across_venues(exchanges: Iterable[BaseExchange], pair: Pair):
         "best_bid": {"venue": ..., "price": ...},
         "best_ask": {"venue": ..., "price": ...},
         "mid": float,
+        "venues_queried": int,
+        "venues_with_data": int,
         "all": [VenueQuote, ...]
       }
     """
-    vqs = await gather_quotes(exchanges, pair)
+    exchanges_list = list(exchanges)
+    vqs = await gather_quotes(exchanges_list, pair)
     bid_vq, ask_vq = select_best(vqs)
+    
     if not bid_vq or not ask_vq:
-        return {"best_bid": None, "best_ask": None, "mid": None, "all": vqs}
+        return {
+            "best_bid": None, 
+            "best_ask": None, 
+            "mid": None, 
+            "venues_queried": len(exchanges_list),
+            "venues_with_data": len(vqs),
+            "all": vqs
+        }
+    
     mid = (bid_vq.quote.bid + ask_vq.quote.ask) / 2.0
     return {
         "best_bid": {"venue": bid_vq.venue, "price": bid_vq.quote.bid, "ts_ms": bid_vq.quote.ts_ms},
         "best_ask": {"venue": ask_vq.venue, "price": ask_vq.quote.ask, "ts_ms": ask_vq.quote.ts_ms},
         "mid": mid,
+        "venues_queried": len(exchanges_list),
+        "venues_with_data": len(vqs),
         "all": vqs,
     }
