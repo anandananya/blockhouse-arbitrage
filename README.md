@@ -42,19 +42,19 @@ python FULL_DEMO.py
 ### Individual Task Demos
 ```bash
 # Task 1: Exchange Connectors
-python task1_demo.py
+python task1_details/task1_demo.py
 
 # Task 2: Symbol Mapping  
-python task2_demo.py
+python task2_details/task2_demo.py
 
 # Task 3: Trading Operations
-python task3_demo.py
+python task3_details/task3_demo.py
 
 # Task 4: Position Monitoring
-python task4_demo.py
+python task4_details/task4_demo.py
 
 # Task 5: Historical Data
-python task5_demo.py
+python task5_details/task5_demo.py
 ```
 
 ##  Task Summaries

@@ -1,230 +1,329 @@
 #!/usr/bin/env python3
 """
-Task 2 Demo: Symbol Mapping
+Task 2 Demo: Trade Execution & Order Management
 
-This demo showcases the universal symbol mapping functionality.
+This demo showcases the unified trading system functionality including:
+1. Unified Order Placement (LIMIT and MARKET orders)
+2. Order Cancellation
+3. Order Status Tracking
+4. Performance Testing (200 orders in 5 minutes)
 """
 
 import asyncio
 import json
 import logging
+from datetime import datetime
 
-from xetrade.utils.symbol_mapper import UniversalSymbolMapper
-from xetrade.models import Pair
+from xetrade.models import Pair, OrderRequest, OrderType
+from xetrade.services.trading import UnifiedTradingService
+from xetrade.exchanges.base import make_exchanges
+from xetrade.exchanges import mock  # noqa: F401
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def demo_symbol_mapping():
-    """Demonstrate symbol mapping functionality."""
+async def demo_unified_order_placement():
+    """Demonstrate unified order placement functionality."""
     
-    print(" Task 2 Demo: Symbol Mapping")
-    print("=" * 50)
-    
-    try:
-        mapper = UniversalSymbolMapper()
-        
-        # Test cases from requirements
-        test_cases = [
-            ("1000BONK-USD", "derive"),
-            ("BONK-USDT", "binance"),
-            ("BTCUSDT", "binance"),
-            ("BTC-USDT", "okx"),
-            ("BTC_USDT", "bitmart"),
-            ("ETH-USD", "derive"),
-            ("100SHIB-USDT", "kucoin"),
-            ("DOGE-USDT", "binance"),
-            ("SOL-USD", "derive"),
-            ("XBT-USDT", "okx"),  # XBT is sometimes used for Bitcoin
-        ]
-        
-        print(" Symbol Mapping Examples:")
-        print("-" * 30)
-        
-        for exchange_symbol, exchange in test_cases:
-            mapping = mapper.map_symbol(exchange_symbol, exchange)
-            print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
-            print(f"   Base: {mapping.base_asset}, Quote: {mapping.quote_asset}")
-            print(f"   Quote Type: {mapping.quote_type.value}, Confidence: {mapping.confidence:.2f}")
-            print()
-        
-        return True
-        
-    except Exception as e:
-        print(f" Error in symbol mapping demo: {e}")
-        return False
-
-async def demo_reverse_mapping():
-    """Demonstrate reverse mapping functionality."""
-    
-    print(" Reverse Mapping Demo:")
-    print("=" * 50)
+    print("Task 2 Demo: Trade Execution & Order Management")
+    print("=" * 60)
     
     try:
-        mapper = UniversalSymbolMapper()
+        # Create trading service with mock exchange
+        exchanges = make_exchanges(["mock"])
+        trading_service = UnifiedTradingService(exchanges)
+        pair = Pair.parse("BTC-USDT")
         
-        # Test reverse mapping
-        universal_symbols = ["BONK/USD", "BTC/USDT", "ETH/USD", "SOL/USDT", "DOGE/USDT"]
-        exchanges = ["binance", "okx", "derive", "kucoin", "bitmart"]
-        
-        print(" Universal to Exchange Symbol Mapping:")
+        print("1. Unified Order Placement Demo")
         print("-" * 40)
         
-        for universal_symbol in universal_symbols:
-            print(f" {universal_symbol}:")
-            for exchange in exchanges:
-                try:
-                    exchange_symbol = mapper.get_exchange_symbol(universal_symbol, exchange)
-                    print(f"   {exchange}: {exchange_symbol}")
-                except Exception as e:
-                    print(f"   {exchange}:  {e}")
-            print()
+        # Test LIMIT order
+        limit_request = OrderRequest(
+            pair=pair,
+            side="buy",
+            order_type="LIMIT",
+            quantity=0.001,
+            price=50000.0,
+        )
         
-        return True
+        print(f"Placing LIMIT order:")
+        print(f"   Pair: {limit_request.pair.human()}")
+        print(f"   Side: {limit_request.side}")
+        print(f"   Type: {limit_request.order_type}")
+        print(f"   Quantity: {limit_request.quantity}")
+        print(f"   Price: ${limit_request.price:,.2f}")
         
-    except Exception as e:
-        print(f" Error in reverse mapping demo: {e}")
-        return False
-
-async def demo_quote_currency_classification():
-    """Demonstrate quote currency classification."""
-    
-    print(" Quote Currency Classification Demo:")
-    print("=" * 50)
-    
-    try:
-        mapper = UniversalSymbolMapper()
+        limit_result = await trading_service.place_order(limit_request, "mock")
         
-        # Get all quote types
-        quote_types = mapper.get_all_quote_types()
-        
-        print(" Quote Currency Classification:")
-        print("-" * 30)
-        
-        for quote_type, currencies in quote_types.items():
-            print(f" {quote_type.value}: {', '.join(currencies)}")
+        if limit_result.success:
+            print(f"    Order placed successfully!")
+            print(f"   Order ID: {limit_result.order_id}")
+            print(f"   Venue: {limit_result.venue}")
+            print(f"   Latency: {limit_result.latency_ms:.2f}ms")
+        else:
+            print(f"    Order placement failed: {limit_result.error}")
         
         print()
-        print(" Quote currency classification complete!")
         
-        return True
+        # Test MARKET order
+        market_request = OrderRequest(
+            pair=pair,
+            side="sell",
+            order_type="MARKET",
+            quantity=0.0005,
+            price=None,  # MARKET orders don't need price
+        )
+        
+        print(f"Placing MARKET order:")
+        print(f"   Pair: {market_request.pair.human()}")
+        print(f"   Side: {market_request.side}")
+        print(f"   Type: {market_request.order_type}")
+        print(f"   Quantity: {market_request.quantity}")
+        
+        market_result = await trading_service.place_order(market_request, "mock")
+        
+        if market_result.success:
+            print(f"    Order placed successfully!")
+            print(f"   Order ID: {market_result.order_id}")
+            print(f"   Venue: {market_result.venue}")
+            print(f"   Latency: {market_result.latency_ms:.2f}ms")
+        else:
+            print(f"    Order placement failed: {market_result.error}")
+        
+        return limit_result.success and market_result.success
         
     except Exception as e:
-        print(f" Error in quote classification demo: {e}")
+        print(f" Error in order placement demo: {e}")
         return False
 
-async def demo_mapping_validation():
-    """Demonstrate mapping validation."""
+async def demo_order_cancellation():
+    """Demonstrate order cancellation functionality."""
     
-    print(" Mapping Validation Demo:")
-    print("=" * 50)
+    print("\n2. Order Cancellation Demo")
+    print("-" * 30)
     
     try:
-        mapper = UniversalSymbolMapper()
+        exchanges = make_exchanges(["mock"])
+        trading_service = UnifiedTradingService(exchanges)
+        pair = Pair.parse("BTC-USDT")
         
-        # Test validation cases
-        validation_cases = [
-            ("BTCUSDT", "BTC/USDT", "binance"),
-            ("BTC-USDT", "BTC/USDT", "okx"),
-            ("1000BONK-USD", "BONK/USD", "derive"),
-            ("ETH-USD", "ETH/USD", "derive"),
-        ]
+        # First place an order to cancel
+        request = OrderRequest(
+            pair=pair,
+            side="buy",
+            order_type="LIMIT",
+            quantity=0.001,
+            price=50000.0,
+        )
         
-        print(" Validating Symbol Mappings:")
-        print("-" * 30)
+        placement_result = await trading_service.place_order(request, "mock")
         
-        for exchange_symbol, expected_universal, exchange in validation_cases:
-            is_valid = mapper.validate_mapping(exchange_symbol, expected_universal, exchange)
-            actual_universal = mapper.normalize_symbol(exchange_symbol, exchange)
+        if not placement_result.success:
+            print(f" Failed to place order for cancellation test: {placement_result.error}")
+            return False
+        
+        order_id = placement_result.order_id
+        print(f"Placed order {order_id} for cancellation test")
+        
+        # Cancel the order
+        print(f"Cancelling order {order_id}...")
+        cancel_result = await trading_service.cancel_order(order_id, pair, "mock")
+        
+        if cancel_result.success:
+            print(f"    Order cancelled successfully!")
+            print(f"   Order ID: {cancel_result.order_id}")
+            print(f"   Venue: {cancel_result.venue}")
+            print(f"   Latency: {cancel_result.latency_ms:.2f}ms")
+        else:
+            print(f"    Order cancellation failed: {cancel_result.error}")
+        
+        return cancel_result.success
+        
+    except Exception as e:
+        print(f" Error in order cancellation demo: {e}")
+        return False
+
+async def demo_order_status_tracking():
+    """Demonstrate order status tracking functionality."""
+    
+    print("\n3. Order Status Tracking Demo")
+    print("-" * 35)
+    
+    try:
+        exchanges = make_exchanges(["mock"])
+        trading_service = UnifiedTradingService(exchanges)
+        pair = Pair.parse("BTC-USDT")
+        
+        # Place an order to track
+        request = OrderRequest(
+            pair=pair,
+            side="buy",
+            order_type="LIMIT",
+            quantity=0.001,
+            price=50000.0,
+        )
+        
+        placement_result = await trading_service.place_order(request, "mock")
+        
+        if not placement_result.success:
+            print(f" Failed to place order for status tracking: {placement_result.error}")
+            return False
+        
+        order_id = placement_result.order_id
+        print(f"Tracking status of order {order_id}")
+        
+        # Get order status
+        status_result = await trading_service.get_order_status(order_id, pair, "mock")
+        
+        if status_result:
+            print(f"    Order status retrieved!")
+            print(f"   Order ID: {status_result.order_id}")
+            print(f"   Status: {status_result.status}")
+            print(f"   Pair: {status_result.pair.human()}")
+            print(f"   Side: {status_result.side}")
+            print(f"   Quantity: {status_result.quantity}")
+            print(f"   Filled Quantity: {status_result.filled_quantity}")
+            print(f"   Price: ${status_result.price:,.2f}")
+            if status_result.avg_fill_price:
+                print(f"   Average Fill Price: ${status_result.avg_fill_price:,.2f}")
+            print(f"   Timestamp: {datetime.fromtimestamp(status_result.ts_ms / 1000)}")
+        else:
+            print(f"    Failed to get order status")
+        
+        return status_result is not None
+        
+    except Exception as e:
+        print(f" Error in order status tracking demo: {e}")
+        return False
+
+async def demo_performance_test():
+    """Demonstrate performance testing with rapid order execution."""
+    
+    print("\n4. Performance Test Demo")
+    print("-" * 25)
+    print("Testing rapid order execution (simplified version)")
+    
+    try:
+        exchanges = make_exchanges(["mock"])
+        trading_service = UnifiedTradingService(exchanges)
+        pair = Pair.parse("BTC-USDT")
+        
+        # Test with a smaller number for demo purposes
+        num_orders = 10  # Reduced from 200 for demo
+        max_duration_seconds = 30  # Reduced from 300 for demo
+        
+        print(f"Attempting {num_orders} orders in {max_duration_seconds} seconds...")
+        
+        start_time = datetime.now()
+        successful_placements = 0
+        successful_cancellations = 0
+        placement_latencies = []
+        cancellation_latencies = []
+        
+        for i in range(num_orders):
+            # Create order request
+            request = OrderRequest(
+                pair=pair,
+                side="buy" if i % 2 == 0 else "sell",
+                order_type="LIMIT" if i % 3 == 0 else "MARKET",
+                quantity=0.001,
+                price=50000.0 + (i * 10),  # Vary price slightly
+            )
             
-            status = " VALID" if is_valid else " INVALID"
-            print(f" {exchange_symbol} ({exchange}) → {actual_universal}")
-            print(f"   Expected: {expected_universal}")
-            print(f"   Actual: {actual_universal}")
-            print(f"   Status: {status}")
-            print()
+            # Place order
+            placement_start = datetime.now()
+            placement_result = await trading_service.place_order(request, "mock")
+            placement_end = datetime.now()
+            
+            placement_latency = (placement_end - placement_start).total_seconds() * 1000
+            placement_latencies.append(placement_latency)
+            
+            if placement_result.success:
+                successful_placements += 1
+                print(f"   Order {i+1}: Placed  (ID: {placement_result.order_id}, Latency: {placement_latency:.2f}ms)")
+                
+                # Cancel order immediately
+                cancel_start = datetime.now()
+                cancel_result = await trading_service.cancel_order(placement_result.order_id, pair, "mock")
+                cancel_end = datetime.now()
+                
+                cancel_latency = (cancel_end - cancel_start).total_seconds() * 1000
+                cancellation_latencies.append(cancel_latency)
+                
+                if cancel_result.success:
+                    successful_cancellations += 1
+                    print(f"           Cancelled  (Latency: {cancel_latency:.2f}ms)")
+                else:
+                    print(f"           Cancellation failed ")
+            else:
+                print(f"   Order {i+1}: Placement failed  ({placement_result.error})")
+            
+            # Check if we've exceeded time limit
+            elapsed = (datetime.now() - start_time).total_seconds()
+            if elapsed > max_duration_seconds:
+                print(f" Reached time limit of {max_duration_seconds} seconds")
+                break
         
-        return True
+        end_time = datetime.now()
+        total_time = (end_time - start_time).total_seconds()
+        
+        # Results
+        print(f"\n Performance Test Results:")
+        print(f"   Total Time: {total_time:.2f} seconds")
+        print(f"   Orders Attempted: {num_orders}")
+        print(f"   Successful Placements: {successful_placements}")
+        print(f"   Successful Cancellations: {successful_cancellations}")
+        print(f"   Placement Success Rate: {(successful_placements/num_orders)*100:.1f}%")
+        print(f"   Cancellation Success Rate: {(successful_cancellations/num_orders)*100:.1f}%")
+        
+        if placement_latencies:
+            avg_placement_latency = sum(placement_latencies) / len(placement_latencies)
+            print(f"   Average Placement Latency: {avg_placement_latency:.2f}ms")
+        
+        if cancellation_latencies:
+            avg_cancellation_latency = sum(cancellation_latencies) / len(cancellation_latencies)
+            print(f"   Average Cancellation Latency: {avg_cancellation_latency:.2f}ms")
+        
+        return successful_placements > 0
         
     except Exception as e:
-        print(f" Error in validation demo: {e}")
-        return False
-
-async def demo_edge_cases():
-    """Demonstrate edge cases and special handling."""
-    
-    print(" Edge Cases Demo:")
-    print("=" * 50)
-    
-    try:
-        mapper = UniversalSymbolMapper()
-        
-        # Test edge cases
-        edge_cases = [
-            ("1000BONK-USD", "derive"),  # Prefix handling
-            ("100SHIB-USDT", "kucoin"),  # Number prefix
-            ("XBT-USDT", "okx"),         # XBT vs BTC
-            ("DOGE-USDT", "binance"),    # Meme coins
-            ("SOL-USD", "derive"),       # USD vs USDT
-        ]
-        
-        print(" Testing Edge Cases:")
-        print("-" * 25)
-        
-        for exchange_symbol, exchange in edge_cases:
-            try:
-                mapping = mapper.map_symbol(exchange_symbol, exchange)
-                print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
-                print(f"   Confidence: {mapping.confidence:.2f}")
-            except Exception as e:
-                print(f" {exchange_symbol} ({exchange}): {e}")
-            print()
-        
-        return True
-        
-    except Exception as e:
-        print(f" Error in edge cases demo: {e}")
+        print(f" Error in performance test demo: {e}")
         return False
 
 def main():
     """Run the Task 2 demo."""
-    print(" Task 2: Symbol Mapping")
-    print("=" * 50)
+    print("Task 2: Trade Execution & Order Management")
+    print("=" * 60)
     
     # Run demos
     results = []
     
-    # Demo 1: Symbol mapping
-    result1 = asyncio.run(demo_symbol_mapping())
+    # Demo 1: Unified order placement
+    result1 = asyncio.run(demo_unified_order_placement())
     results.append(result1)
     
-    # Demo 2: Reverse mapping
-    result2 = asyncio.run(demo_reverse_mapping())
+    # Demo 2: Order cancellation
+    result2 = asyncio.run(demo_order_cancellation())
     results.append(result2)
     
-    # Demo 3: Quote classification
-    result3 = asyncio.run(demo_quote_currency_classification())
+    # Demo 3: Order status tracking
+    result3 = asyncio.run(demo_order_status_tracking())
     results.append(result3)
     
-    # Demo 4: Validation
-    result4 = asyncio.run(demo_mapping_validation())
+    # Demo 4: Performance testing
+    result4 = asyncio.run(demo_performance_test())
     results.append(result4)
-    
-    # Demo 5: Edge cases
-    result5 = asyncio.run(demo_edge_cases())
-    results.append(result5)
     
     # Summary
     print("\n Task 2 Demo Summary")
-    print("=" * 50)
+    print("=" * 60)
     
     demos = [
-        "Symbol Mapping",
-        "Reverse Mapping",
-        "Quote Classification",
-        "Mapping Validation",
-        "Edge Cases"
+        "Unified Order Placement",
+        "Order Cancellation", 
+        "Order Status Tracking",
+        "Performance Testing"
     ]
     
     for i, (demo, result) in enumerate(zip(demos, results), 1):
@@ -237,15 +336,13 @@ def main():
     print(f"\n Overall Results: {passed}/{total} demos passed")
     
     if passed == total:
-        print("\n Task 2 Symbol Mapping Demo Complete!")
+        print("\n Task 2 Trade Execution & Order Management Demo Complete!")
         print("The system successfully demonstrates:")
-        print(" Universal symbol normalization")
-        print(" Exchange-specific symbol formats")
-        print(" Prefix/suffix handling (1000BONK → BONK)")
-        print(" Quote currency classification")
-        print(" Reverse mapping capabilities")
-        print(" Confidence scoring")
-        print(" Edge case handling")
+        print(" Unified order placement (LIMIT and MARKET orders)")
+        print(" Order cancellation functionality")
+        print(" Order status tracking")
+        print(" Performance testing with rapid execution")
+        print(" Error handling and recovery")
     else:
         print("\n  Some demos had issues. Check the errors above.")
 

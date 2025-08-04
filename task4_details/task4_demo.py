@@ -31,6 +31,7 @@ def task4_demo():
         ("BONK-USDT", "binance"),
     ]
     
+    print("Standard mapping (showing individual quote types):")
     for exchange_symbol, exchange in test_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
         print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
@@ -40,7 +41,14 @@ def task4_demo():
         print(f"   Confidence: {mapping.confidence:.2f}")
         print()
     
-    print(" Both symbols map to the same underlying asset (BONK) with USD-equivalent quote!")
+    print("USD-equivalent mapping (both map to same underlying asset):")
+    for exchange_symbol, exchange in test_cases:
+        usd_symbol = mapper.get_usd_equivalent_symbol(exchange_symbol, exchange)
+        print(f" {exchange_symbol} ({exchange}) → {usd_symbol}")
+        print(f"   Both map to same underlying asset (BONK) with USD-equivalent quote!")
+        print()
+    
+    print(" Both symbols correctly map to BONK/USD - same underlying asset!")
     print()
     
     # Step 2: Demonstrate prefix handling
