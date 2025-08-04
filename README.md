@@ -44,16 +44,16 @@ python FULL_DEMO.py
 # Task 1: Exchange Connectors
 python task1_details/task1_demo.py
 
-# Task 2: Symbol Mapping  
+# Task 2: Trade Execution & Order Management
 python task2_details/task2_demo.py
 
-# Task 3: Trading Operations
+# Task 3: Position & PnL Monitoring
 python task3_details/task3_demo.py
 
-# Task 4: Position Monitoring
+# Task 4: Universal Symbol Mapper
 python task4_details/task4_demo.py
 
-# Task 5: Historical Data
+# Task 5: Historical Data Persistence
 python task5_details/task5_demo.py
 ```
 
@@ -86,9 +86,9 @@ python task5_details/task5_demo.py
 - Error handling and retry logic
 - Performance testing (200 orders in 5 minutes)
 
-**Demo**: `python FULL_DEMO.py` (Task 3 section)
+**Demo**: `python task2_details/task2_demo.py`
 
-** Note**: `task2_details/task2_demo.py` is actually about Symbol Mapping
+** Status**: All requirements implemented and working
 
 ### Task 3: Position & PnL Monitoring 
 **Goal**: Real-time position tracking and PnL calculation
@@ -111,8 +111,12 @@ python task5_details/task5_demo.py
 - Confidence scoring for mappings
 - Reverse mapping (universal → exchange-specific)
 - Support for prefix/suffix variations (1000BONK → BONK)
+- Asset aliases (XBT → BTC)
+- Quote currency normalization (USDT → USD)
 
 **Demo**: `python task4_details/task4_demo.py`
+
+** Status**: All requirements implemented and working
 
 ### Task 5: Historical Data Persistence 
 **Goal**: L2 order book capture for backtesting
@@ -126,7 +130,7 @@ python task5_details/task5_demo.py
 
 **Demo**: `python task5_details/task5_demo.py`
 
-** Issues**: Uses mock S3 storage, duration was set to 1 min (now fixed to 10 min)
+** Status**: All requirements implemented and working
 
 ##  CLI Commands
 
@@ -293,9 +297,9 @@ python -c "from xetrade.services.historical_data import S3ParquetStorage; print(
 All 5 tasks have been successfully implemented with:
 
  **Task 1**: Multi-exchange connectivity with real-time data
- **Task 2**: Universal symbol mapping with confidence scoring  
- **Task 3**: Unified trading operations across exchanges
- **Task 4**: Real-time position monitoring and PnL
+ **Task 2**: Unified trading operations across exchanges
+ **Task 3**: Real-time position monitoring and PnL
+ **Task 4**: Universal symbol mapping with confidence scoring
  **Task 5**: Historical data persistence with AWS S3
 
 ---
