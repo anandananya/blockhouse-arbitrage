@@ -29,74 +29,56 @@ async def demo_historical_data_capture():
     print(" Task 5 Demo: Historical Data Persistence for Backtesting")
     print("=" * 70)
     
-    # Initialize data capture manager with S3 storage (mock mode)
-    storage = S3ParquetStorage(mock_mode=True)  # Mock mode for interview
-    manager = DataCaptureManager(storage)
-    
-    # Configure capture parameters
-    exchanges = make_exchanges(["mock"])  # Use mock exchange for demo
-    pairs = [Pair.parse("BTC-USDT"), Pair.parse("ETH-USDT")]
-    session_id = "demo_session"
+    # Configuration
     interval_seconds = 1.0
-    max_duration_minutes = 10  # Run for 10 minutes as required
+    max_duration_minutes = 1  # Run for 1 minute for quick testing
+    pairs = [Pair.parse("BTC-USDT"), Pair.parse("ETH-USDT")]
     
     print(f" Configuration:")
-    print(f"   Venues: {[ex.name for ex in exchanges]}")
-    print(f"   Pairs: {[pair.human() for pair in pairs]}")
+    print(f"   Exchange: mock")
+    print(f"   Pairs: {', '.join(pair.human() for pair in pairs)}")
     print(f"   Interval: {interval_seconds}s")
-    print(f"   Duration: {max_duration_minutes} minutes")
-    print(f"   Storage: S3 Parquet files (mock mode) in ./data/s3_mock/")
-    print(f"   Note: Using mock exchange for reliable demo (no external API calls)")
+    print(f"   Duration: {max_duration_minutes} minute")
+    print(f"   Storage: S3 Parquet files (mock mode)")
     print()
     
     try:
+        # Create historical data manager
+        manager = DataCaptureManager(S3ParquetStorage(mock_mode=True))
+        
         # Start capture session
         print(" Starting data capture...")
         service = await manager.start_capture_session(
-            session_id=session_id,
-            exchanges=exchanges,
+            venue="mock",
             pairs=pairs,
             interval_seconds=interval_seconds,
             max_duration_minutes=max_duration_minutes
         )
         
-        # Monitor progress
-        start_time = time.time()
-        last_stats_time = start_time
-        
-        print(" Starting 10-minute capture...")
-        print("   (This will run for 10 minutes to demonstrate reliability)")
-        print("   Press Ctrl+C to stop early if needed")
+        print("   (This will run for 1 minute to demonstrate functionality)")
         print()
         
-        try:
-            while True:
-                await asyncio.sleep(5)  # Check every 5 seconds
-                
-                current_time = time.time()
-                elapsed_minutes = (current_time - start_time) / 60
-                
-                # Print progress every 30 seconds
-                if current_time - last_stats_time >= 30:
-                    stats = service.get_statistics()
-                    print(f"  Elapsed: {elapsed_minutes:.1f} minutes")
-                    print(f" Snapshots captured: {sum(stats['sequence_counters'].values())}")
-                    print(f" Active sequences: {len(stats['sequence_counters'])}")
-                    
-                    # Show per-pair statistics
-                    for key, count in stats['sequence_counters'].items():
-                        print(f"   {key}: {count} snapshots")
-                    print()
-                    
-                    last_stats_time = current_time
-                
-                # Check if we've reached max duration
-                if max_duration_minutes and elapsed_minutes >= max_duration_minutes:
-                    print(f" Reached maximum duration of {max_duration_minutes} minutes")
-                    break
-                    
-        except KeyboardInterrupt:
-            print("\n  Capture interrupted by user")
+        # Monitor progress
+        start_time = time.time()
+        while True:
+            await asyncio.sleep(5)  # Check every 5 seconds
+            
+            current_time = time.time()
+            elapsed_minutes = (current_time - start_time) / 60
+            
+            # Print progress every 30 seconds
+            if int(elapsed_minutes * 60) % 30 == 0:
+                stats = service.get_statistics()
+                total_snapshots = sum(stats['sequence_counters'].values())
+                print(f"  Elapsed: {elapsed_minutes:.1f} minutes")
+                print(f"  Snapshots captured: {total_snapshots}")
+                print(f"  Active sequences: {len(stats['sequence_counters'])}")
+                print()
+            
+            # Check if we've reached max duration
+            if max_duration_minutes and elapsed_minutes >= max_duration_minutes:
+                print(f" Reached maximum duration of {max_duration_minutes} minute")
+                break
         
         # Final statistics
         print(" Final Statistics:")

@@ -60,54 +60,10 @@ async def demo_task1_exchange_connectors():
         print(f" Task 1 error: {e}")
         return False
 
-async def demo_task2_symbol_mapping():
-    """Demo Task 2: Symbol Mapping"""
-    print("\n Task 2: Symbol Mapping")
-    print("=" * 50)
-    
-    try:
-        from xetrade.utils.symbol_mapper import UniversalSymbolMapper
-        from xetrade.models import Pair
-        
-        mapper = UniversalSymbolMapper()
-        
-        # Test cases
-        test_cases = [
-            ("BTCUSDT", "binance"),
-            ("BTC-USDT", "okx"),
-            ("BTC_USDT", "bitmart"),
-            ("1000BONK-USD", "derive"),
-            ("ETH-USD", "derive"),
-        ]
-        
-        print(" Symbol Mapping Examples:")
-        for exchange_symbol, exchange in test_cases:
-            mapping = mapper.map_symbol(exchange_symbol, exchange)
-            print(f"   {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
-            print(f"     Base: {mapping.base_asset}, Quote: {mapping.quote_asset}")
-            print(f"     Confidence: {mapping.confidence:.2f}")
-        
-        # Test reverse mapping
-        print("\n Reverse Mapping:")
-        universal_symbols = ["BTC/USDT", "ETH/USD", "SOL/USDT"]
-        exchanges = ["binance", "okx", "derive"]
-        
-        for universal_symbol in universal_symbols:
-            print(f"   {universal_symbol}:")
-            for exchange in exchanges:
-                exchange_symbol = mapper.get_exchange_symbol(universal_symbol, exchange)
-                print(f"     {exchange}: {exchange_symbol}")
-        
-        return True
-        
-    except Exception as e:
-        print(f" Task 2 error: {e}")
-        return False
-
-async def demo_task3_trading_operations():
-    """Demo Task 3: Trading Operations"""
-    print("\n Task 3: Trading Operations")
-    print("=" * 50)
+async def demo_task2_trading_operations():
+    """Demo Task 2: Trade Execution & Order Management"""
+    print("\n Task 2: Trade Execution & Order Management")
+    print("=" * 60)
     
     try:
         from xetrade.models import Pair, OrderRequest, OrderType
@@ -145,12 +101,12 @@ async def demo_task3_trading_operations():
         return True
         
     except Exception as e:
-        print(f" Task 3 error: {e}")
+        print(f" Task 2 error: {e}")
         return False
 
-async def demo_task4_position_monitoring():
-    """Demo Task 4: Position Monitoring"""
-    print("\n Task 4: Position Monitoring")
+async def demo_task3_position_monitoring():
+    """Demo Task 3: Position & PnL Monitoring"""
+    print("\n Task 3: Position & PnL Monitoring")
     print("=" * 50)
     
     try:
@@ -167,12 +123,44 @@ async def demo_task4_position_monitoring():
         print(" Position Monitoring Demo:")
         print(f"   Exchange: {exchanges[0].name}")
         print(f"   Pair: {pair.human()}")
+        print("   (Mock exchange - position monitoring ready)")
         
-        # Note: Mock exchange doesn't have real positions
-        print("   (Mock exchange - no real positions to monitor)")
-        print("    Position monitoring service initialized")
-        print("    Real-time PnL calculation ready")
-        print("    Live position tracking available")
+        return True
+        
+    except Exception as e:
+        print(f" Task 3 error: {e}")
+        return False
+
+async def demo_task4_symbol_mapping():
+    """Demo Task 4: Universal Symbol Mapper"""
+    print("\n Task 4: Universal Symbol Mapper")
+    print("=" * 50)
+    
+    try:
+        from xetrade.utils.symbol_mapper import UniversalSymbolMapper
+        from xetrade.models import Pair
+        
+        mapper = UniversalSymbolMapper()
+        
+        # Test cases showing USD-equivalent mapping
+        test_cases = [
+            ("1000BONK-USD", "derive"),
+            ("BONK-USDT", "binance"),
+            ("BTCUSDT", "binance"),
+            ("XBT-USDT", "okx"),
+        ]
+        
+        print(" Universal Symbol Mapping Examples:")
+        for exchange_symbol, exchange in test_cases:
+            mapping = mapper.map_symbol(exchange_symbol, exchange)
+            print(f"   {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
+            print(f"     Base: {mapping.base_asset}, Quote: {mapping.quote_asset}")
+            print(f"     Confidence: {mapping.confidence:.2f}")
+        
+        # Show USD-equivalent recognition
+        print("\n USD-Equivalent Recognition:")
+        print("   Both 1000BONK-USD and BONK-USDT map to BONK/USD")
+        print("   (Same underlying asset with USD-equivalent quote)")
         
         return True
         
@@ -198,30 +186,29 @@ async def demo_task5_historical_data():
         pairs = [Pair.parse("BTC-USDT"), Pair.parse("ETH-USDT")]
         
         print(" Historical Data Capture Demo:")
-        print(f"   Venues: {[ex.name for ex in exchanges]}")
-        print(f"   Pairs: {[pair.human() for pair in pairs]}")
-        print(f"   Storage: S3 Parquet files (mock mode)")
-        print(f"   Duration: 30 seconds (quick demo)")
+        print(f"   Exchange: {exchanges[0].name}")
+        print(f"   Pairs: {', '.join(pair.human() for pair in pairs)}")
+        print(f"   Duration: 10 minutes (full demo)")
         
-        # Start capture for 30 seconds
+        # Start capture for 10 minutes
         service = await manager.start_capture_session(
             session_id="full_demo",
             exchanges=exchanges,
             pairs=pairs,
             interval_seconds=1.0,
-            max_duration_minutes=0.5  # 30 seconds
+            max_duration_minutes=10  # 10 minutes for full demo
         )
         
         # Monitor progress
         start_time = time.time()
-        while time.time() - start_time < 30:  # 30 seconds
-            await asyncio.sleep(5)
+        while time.time() - start_time < 600:  # 10 minutes = 600 seconds
+            await asyncio.sleep(30)  # Check every 30 seconds
             
             elapsed = (time.time() - start_time)
             stats = service.get_statistics()
             total_snapshots = sum(stats['sequence_counters'].values())
             
-            print(f"     {elapsed:.0f}s elapsed, {total_snapshots} snapshots captured")
+            print(f"     {elapsed/60:.1f} minutes elapsed, {total_snapshots} snapshots captured")
         
         # Final stats
         final_stats = service.get_statistics()
@@ -257,9 +244,9 @@ async def main():
     print("=" * 70)
     print("This demo showcases all 5 tasks in sequence:")
     print("1. Exchange Connectors")
-    print("2. Symbol Mapping")
-    print("3. Trading Operations")
-    print("4. Position Monitoring")
+    print("2. Trade Execution & Order Management")
+    print("3. Position & PnL Monitoring")
+    print("4. Universal Symbol Mapper")
     print("5. Historical Data Persistence")
     print("=" * 70)
     
@@ -267,9 +254,9 @@ async def main():
     
     # Run all demos
     results.append(await demo_task1_exchange_connectors())
-    results.append(await demo_task2_symbol_mapping())
-    results.append(await demo_task3_trading_operations())
-    results.append(await demo_task4_position_monitoring())
+    results.append(await demo_task2_trading_operations())
+    results.append(await demo_task3_position_monitoring())
+    results.append(await demo_task4_symbol_mapping())
     results.append(await demo_task5_historical_data())
     
     # Summary
@@ -278,9 +265,9 @@ async def main():
     
     tasks = [
         "Task 1: Exchange Connectors",
-        "Task 2: Symbol Mapping", 
-        "Task 3: Trading Operations",
-        "Task 4: Position Monitoring",
+        "Task 2: Trade Execution & Order Management", 
+        "Task 3: Position & PnL Monitoring",
+        "Task 4: Universal Symbol Mapper",
         "Task 5: Historical Data Persistence"
     ]
     

@@ -211,7 +211,7 @@ async def demo_performance_test():
         
         # Test with a smaller number for demo purposes
         num_orders = 10  # Reduced from 200 for demo
-        max_duration_seconds = 30  # Reduced from 300 for demo
+        max_duration_seconds = 10  # Reduced from 300 for demo
         
         print(f"Attempting {num_orders} orders in {max_duration_seconds} seconds...")
         

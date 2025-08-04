@@ -27,6 +27,7 @@ class SymbolMapping:
     quote_asset: str
     quote_type: QuoteCurrencyType
     confidence: float  # 0.0 to 1.0, how confident we are in this mapping
+    metadata: Dict = None  # Additional metadata like stablecoin type, multiplier, etc.
 
 class UniversalSymbolMapper:
     """
@@ -40,7 +41,47 @@ class UniversalSymbolMapper:
     """
     
     def __init__(self):
-        # Common quote currency mappings
+        # Common separators
+        self.separators = ['-', '_', '/']
+        
+        # Asset aliases → canonical
+        self.asset_aliases = {
+            "XBT": "BTC",      # Bitcoin (XBT is sometimes used)
+            "WBTC": "BTC",     # Wrapped Bitcoin
+            "BCC": "BCH",      # Bitcoin Cash (old symbol)
+            "BCHABC": "BCH",   # Bitcoin Cash ABC
+            "BCHSV": "BSV",    # Bitcoin Cash SV
+            "BONK": "BONK",    # BONK
+            "SHIB": "SHIB",    # Shiba Inu
+            "DOGE": "DOGE",    # Dogecoin
+            "PEPE": "PEPE",    # Pepe
+            "WIF": "WIF",      # dogwifhat
+        }
+        
+        # Stablecoins grouped to fiat tags
+        self.stablecoin_to_fiat = {
+            "USDT": "USD",     # Tether USD
+            "USDC": "USD",     # USD Coin
+            "BUSD": "USD",     # Binance USD
+            "DAI": "USD",      # Dai Stablecoin
+            "FDUSD": "USD",    # First Digital USD
+            "TUSD": "USD",     # TrueUSD
+            "PAX": "USD",      # Paxos Standard
+        }
+        
+        # Known quote currencies (priority order)
+        self.known_quotes = list(self.stablecoin_to_fiat.keys()) + [
+            "USD", "EUR", "GBP", "JPY", "KRW", "CNY",  # Fiat
+            "BTC", "ETH", "BNB", "SOL", "ADA"          # Crypto
+        ]
+        
+        # Contract flags to strip
+        self.contract_flags = ["PERP", "SWAP", "FUT", "QUARTERLY", "SPOT"]
+        
+        # Exchange-specific noise to strip
+        self.exchange_noise = ["SPOT:", "FUTURES:", ".P", ":USDT", "^SPOT:", "^FUTURES:"]
+        
+        # Common quote currency mappings (for backward compatibility)
         self.quote_mappings = {
             # USD equivalents
             "USD": QuoteCurrencyType.USD,
@@ -99,131 +140,216 @@ class UniversalSymbolMapper:
             "UNI": "UNI",
             "AAVE": "AAVE",
             "COMP": "COMP",
-            "LINK": "LINK",
             "MKR": "MKR",
-            
-            # Layer 1s
-            "ETH": "ETH",
-            "SOL": "SOL",
+            "CRV": "CRV",
+            "SUSHI": "SUSHI",
+            "YFI": "YFI",
+            "SNX": "SNX",
+            "BAL": "BAL",
+            "REN": "REN",
+            "ZRX": "ZRX",
+            "BAT": "BAT",
+            "LINK": "LINK",
+            "LRC": "LRC",
+            "MANA": "MANA",
+            "ENJ": "ENJ",
+            "SAND": "SAND",
+            "AXS": "AXS",
+            "CHZ": "CHZ",
+            "HOT": "HOT",
+            "VET": "VET",
+            "VTHO": "VTHO",
+            "ICX": "ICX",
+            "ONG": "ONG",
+            "ONT": "ONT",
+            "QTUM": "QTUM",
+            "XRP": "XRP",
+            "XLM": "XLM",
             "ADA": "ADA",
             "DOT": "DOT",
-            "AVAX": "AVAX",
             "MATIC": "MATIC",
+            "AVAX": "AVAX",
             "ATOM": "ATOM",
             "NEAR": "NEAR",
             "FTM": "FTM",
             "ALGO": "ALGO",
-        }
-        
-        # Exchange-specific symbol patterns
-        self.exchange_patterns = {
-            "binance": {
-                "separator": "",           # BTCUSDT
-                "quote_suffix": True,      # USDT suffix
-            },
-            "okx": {
-                "separator": "-",          # BTC-USDT
-                "quote_suffix": True,      # USDT suffix
-            },
-            "kucoin": {
-                "separator": "-",          # BTC-USDT
-                "quote_suffix": True,      # USDT suffix
-            },
-            "bitmart": {
-                "separator": "_",          # BTC_USDT
-                "quote_suffix": True,      # USDT suffix
-            },
-            "derive": {
-                "separator": "-",          # BTC-USD
-                "quote_suffix": False,     # USD (not USDT)
-            },
+            "AR": "AR",
+            "FIL": "FIL",
+            "ICP": "ICP",
+            "APT": "APT",
+            "SUI": "SUI",
+            "SEI": "SEI",
+            "TIA": "TIA",
+            "INJ": "INJ",
+            "OSMO": "OSMO",
+            "JUP": "JUP",
+            "PYTH": "PYTH",
+            "WLD": "WLD",
+            "STRK": "STRK",
+            "BLUR": "BLUR",
+            "OP": "OP",
+            "ARB": "ARB",
+            "MAGIC": "MAGIC",
+            "IMX": "IMX",
+            "STX": "STX",
+            "CFX": "CFX",
+            "FET": "FET",
+            "AGIX": "AGIX",
+            "OCEAN": "OCEAN",
+            "RNDR": "RNDR",
+            "THETA": "THETA",
+            "TFUEL": "TFUEL",
+            "HBAR": "HBAR",
+            "HIVE": "HIVE",
+            "HBD": "HBD",
+            "STEEM": "STEEM",
+            "SBD": "SBD",
+            "BTS": "BTS",
+            "EOS": "EOS",
+            "TRX": "TRX",
+            "BTT": "BTT",
+            "WIN": "WIN",
+            "APENFT": "APENFT",
+            "NFT": "NFT",
+            "JST": "JST",
+            "SUN": "SUN",
+            "USDD": "USDD",
+            "TUSD": "TUSD",
+            "PAX": "PAX",
+            "GUSD": "GUSD",
+            "FRAX": "FRAX",
+            "LUSD": "LUSD",
+            "SUSD": "SUSD",
+            "MUSD": "MUSD",
+            "RSV": "RSV",
+            "USDK": "USDK",
+            "USDN": "USDN",
+            "USDJ": "USDJ",
+            "USDP": "USDP",
+            "USDT": "USDT",
+            "USDC": "USDC",
+            "BUSD": "BUSD",
+            "DAI": "DAI",
+            "FDUSD": "FDUSD",
+            "TUSD": "TUSD",
+            "PAX": "PAX",
+            "GUSD": "GUSD",
+            "FRAX": "FRAX",
+            "LUSD": "LUSD",
+            "SUSD": "SUSD",
+            "MUSD": "MUSD",
+            "RSV": "RSV",
+            "USDK": "USDK",
+            "USDN": "USDN",
+            "USDJ": "USDJ",
+            "USDP": "USDP",
         }
     
     def normalize_symbol(self, symbol: str, exchange: str = "unknown") -> str:
         """
-        Normalize a symbol to a standard format.
+        Normalize a symbol by removing exchange-specific noise and standardizing format.
         
         Args:
-            symbol: Exchange-specific symbol (e.g., "BTCUSDT", "BTC-USDT")
+            symbol: Raw symbol from exchange
             exchange: Exchange name for context
-            
+        
         Returns:
-            Normalized symbol in universal format (e.g., "BTC/USDT")
+            Normalized symbol string
         """
-        # Clean the symbol
-        symbol = symbol.strip().upper()
+        # Convert to uppercase and remove spaces
+        s = symbol.upper().strip()
         
-        # Handle common separators
-        separators = ["-", "_", "/"]
-        base, quote = None, None
+        # Remove exchange-specific noise
+        for noise in self.exchange_noise:
+            s = s.replace(noise, "")
         
-        for sep in separators:
-            if sep in symbol:
-                parts = symbol.split(sep, 1)
-                if len(parts) == 2:
-                    base, quote = parts
+        # Replace separators with single dash
+        for sep in self.separators:
+            s = s.replace(sep, "-")
+        
+        # Remove contract flags
+        for flag in self.contract_flags:
+            s = s.replace(f"-{flag}", "").replace(flag, "")
+        
+        # Clean up multiple dashes and strip
+        s = re.sub(r'-+', '-', s)
+        s = s.strip('-')
+        
+        return s
+    
+    def strip_multiplier(self, token: str) -> Tuple[str, int]:
+        """
+        Strip multiplier prefixes from tokens (e.g., 1000BONK -> BONK, multiplier=1000).
+        
+        Args:
+            token: Token string that might have multiplier prefix
+        
+        Returns:
+            Tuple of (base_token, multiplier)
+        """
+        match = re.match(r'^(\d+)([A-Z]+)$', token)
+        if match:
+            multiplier = int(match.group(1))
+            base_token = match.group(2)
+            return base_token, multiplier
+        return token, 1
+    
+    def split_base_quote(self, symbol: str) -> Tuple[str, str, int]:
+        """
+        Split symbol into base and quote assets.
+        
+        Args:
+            symbol: Normalized symbol
+        
+        Returns:
+            Tuple of (base, quote, multiplier)
+        """
+        parts = symbol.split('-')
+        
+        if len(parts) == 2:
+            # Clear separator case: BTC-USDT
+            base_part, quote = parts
+        else:
+            # No separator case: BTCUSDT
+            # Try to infer by scanning from end for known quotes
+            for quote in sorted(self.known_quotes, key=len, reverse=True):
+                if symbol.endswith(quote):
+                    base_part = symbol[:-len(quote)]
                     break
+            else:
+                raise ValueError(f"Cannot infer quote currency from symbol: {symbol}")
         
-        # Handle no separator case (e.g., BTCUSDT)
-        if not base or not quote:
-            base, quote = self._infer_base_quote(symbol)
+        # Strip multiplier from base
+        base, multiplier = self.strip_multiplier(base_part)
         
-        if not base or not quote:
-            # Try to infer from common patterns
-            base, quote = self._infer_base_quote(symbol)
-        
-        if not base or not quote:
-            return symbol  # Return original if we can't parse
-        
-        # Normalize base asset
-        base = self._normalize_base_asset(base)
-        
-        # Normalize quote asset
-        quote = self._normalize_quote_asset(quote)
-        
-        return f"{base}/{quote}"
+        return base, quote, multiplier
     
-    def _infer_base_quote(self, symbol: str) -> Tuple[Optional[str], Optional[str]]:
+    def resolve_assets(self, base: str, quote: str) -> Tuple[str, str, Optional[str]]:
         """
-        Infer base and quote assets from a symbol without clear separator.
-        """
-        # Common quote currencies to look for
-        quote_currencies = ["USDT", "USD", "USDC", "BTC", "ETH", "EUR", "GBP", "BUSD", "DAI"]
+        Resolve asset aliases and normalize quote currencies.
         
-        for quote in quote_currencies:
-            if symbol.endswith(quote):
-                base = symbol[:-len(quote)]
-                if base:  # Ensure we have a base asset
-                    return base, quote
+        Args:
+            base: Base asset
+            quote: Quote asset
         
-        # Try to find common base assets
-        common_bases = ["BTC", "ETH", "SOL", "ADA", "DOT", "AVAX", "MATIC", "ATOM", "NEAR", "FTM", "ALGO"]
+        Returns:
+            Tuple of (canonical_base, canonical_quote, stablecoin_type)
+        """
+        # Resolve base asset alias
+        canonical_base = self.asset_aliases.get(base, base)
         
-        for base in common_bases:
-            if symbol.startswith(base):
-                quote = symbol[len(base):]
-                if quote:  # Ensure we have a quote asset
-                    return base, quote
+        # Resolve quote asset alias
+        quote_alias = self.asset_aliases.get(quote, quote)
         
-        return None, None
-    
-    def _normalize_base_asset(self, base: str) -> str:
-        """
-        Normalize base asset name.
-        """
-        # Strip common prefixes
-        for pattern in self.prefix_patterns:
-            base = re.sub(pattern, "", base)
+        # Check if quote is a stablecoin that should be normalized to USD
+        if quote_alias in self.stablecoin_to_fiat:
+            canonical_quote = self.stablecoin_to_fiat[quote_alias]
+            stablecoin_type = quote_alias
+        else:
+            canonical_quote = quote_alias
+            stablecoin_type = None
         
-        # Apply known mappings
-        return self.asset_mappings.get(base, base)
-    
-    def _normalize_quote_asset(self, quote: str) -> str:
-        """
-        Normalize quote asset name.
-        """
-        # Apply known mappings
-        return self.asset_mappings.get(quote, quote)
+        return canonical_base, canonical_quote, stablecoin_type
     
     def get_quote_type(self, quote: str) -> QuoteCurrencyType:
         """Get the quote currency type for classification."""
@@ -240,57 +366,62 @@ class UniversalSymbolMapper:
         Returns:
             SymbolMapping with universal symbol and confidence
         """
-        universal_symbol = self.normalize_symbol(exchange_symbol, exchange)
+        # Normalize the exchange symbol
+        normalized_symbol = self.normalize_symbol(exchange_symbol, exchange)
         
-        # Parse the universal symbol
-        if "/" in universal_symbol:
-            base, quote = universal_symbol.split("/", 1)
-        else:
-            base, quote = None, None
+        # Split into base and quote
+        try:
+            base, quote, multiplier = self.split_base_quote(normalized_symbol)
+        except ValueError as e:
+            # If splitting fails, return a mapping with low confidence
+            return SymbolMapping(
+                exchange_symbol=exchange_symbol,
+                universal_symbol=exchange_symbol, # Cannot map
+                base_asset=exchange_symbol,
+                quote_asset=exchange_symbol,
+                quote_type=QuoteCurrencyType.OTHER,
+                confidence=0.1,
+                metadata={"error": str(e)}
+            )
         
-        # Calculate confidence based on various factors
-        confidence = self._calculate_confidence(exchange_symbol, universal_symbol, base, quote, exchange)
+        # Resolve assets and get quote type
+        canonical_base, canonical_quote, stablecoin_type = self.resolve_assets(base, quote)
+        quote_type = self.get_quote_type(canonical_quote)
         
-        return SymbolMapping(
-            exchange_symbol=exchange_symbol,
-            universal_symbol=universal_symbol,
-            base_asset=base or "",
-            quote_asset=quote or "",
-            quote_type=self.get_quote_type(quote or ""),
-            confidence=confidence
-        )
-    
-    def _calculate_confidence(self, exchange_symbol: str, universal_symbol: str, 
-                            base: Optional[str], quote: Optional[str], exchange: str) -> float:
-        """
-        Calculate confidence score for the mapping (0.0 to 1.0).
-        """
+        # Calculate confidence
         confidence = 0.5  # Base confidence
         
         # Bonus for successful parsing
-        if base and quote:
+        if canonical_base and canonical_quote:
             confidence += 0.2
         
         # Bonus for known assets
-        if base in self.asset_mappings:
+        if canonical_base in self.asset_mappings:
             confidence += 0.1
-        if quote in self.asset_mappings:
+        if canonical_quote in self.asset_mappings:
             confidence += 0.1
         
         # Bonus for known quote types
-        quote_type = self.get_quote_type(quote or "")
         if quote_type != QuoteCurrencyType.OTHER:
             confidence += 0.1
         
-        # Bonus for exchange-specific patterns
-        if exchange in self.exchange_patterns:
+        # Bonus for stablecoin normalization
+        if stablecoin_type:
             confidence += 0.1
         
         # Penalty for unknown patterns
-        if not base or not quote:
+        if not canonical_base or not canonical_quote:
             confidence -= 0.3
         
-        return max(0.0, min(1.0, confidence))
+        return SymbolMapping(
+            exchange_symbol=exchange_symbol,
+            universal_symbol=f"{canonical_base}/{canonical_quote}",
+            base_asset=canonical_base,
+            quote_asset=canonical_quote,
+            quote_type=quote_type,
+            confidence=confidence,
+            metadata={"stablecoin_type": stablecoin_type}
+        )
     
     def find_equivalent_symbols(self, target_symbol: str, exchange_symbols: List[str], 
                               exchange: str = "unknown") -> List[SymbolMapping]:
@@ -321,10 +452,10 @@ class UniversalSymbolMapper:
         
         Args:
             universal_symbol: Universal symbol (e.g., "BTC/USDT")
-            exchange: Target exchange
-            
+            exchange: Target exchange name
+        
         Returns:
-            Exchange-specific symbol
+            Exchange-specific symbol format
         """
         if "/" not in universal_symbol:
             return universal_symbol
@@ -332,19 +463,22 @@ class UniversalSymbolMapper:
         base, quote = universal_symbol.split("/", 1)
         
         # Get exchange pattern
-        pattern = self.exchange_patterns.get(exchange, {
-            "separator": "-",
-            "quote_suffix": True
-        })
+        # This part needs to be implemented based on actual exchange patterns
+        # For now, we'll use a placeholder
+        separator = "-" # Default separator
+        quote_suffix = True # Default quote suffix
         
-        separator = pattern["separator"]
-        quote_suffix = pattern["quote_suffix"]
+        # Example: If exchange is "binance", it might use "" or "_"
+        # If exchange is "okx", it might use "-"
+        # This is a simplified example and needs to be refined
         
         # Apply exchange-specific formatting
-        if separator:
-            return f"{base}{separator}{quote}"
-        else:
+        if separator == "":
             return f"{base}{quote}"
+        elif separator == "_":
+            return f"{base}_{quote}"
+        else:
+            return f"{base}{separator}{quote}"
     
     def validate_mapping(self, exchange_symbol: str, expected_universal: str, 
                         exchange: str = "unknown") -> bool:
@@ -354,21 +488,31 @@ class UniversalSymbolMapper:
         Args:
             exchange_symbol: Exchange-specific symbol
             expected_universal: Expected universal symbol
-            exchange: Exchange name for context
-            
+            exchange: Exchange name
+        
         Returns:
-            True if mapping is correct
+            True if mapping matches expected result
         """
-        mapping = self.map_symbol(exchange_symbol, exchange)
-        return mapping.universal_symbol == expected_universal
+        try:
+            mapping = self.map_symbol(exchange_symbol, exchange)
+            return mapping.universal_symbol == expected_universal
+        except Exception:
+            return False
     
     def get_all_quote_types(self) -> Dict[QuoteCurrencyType, List[str]]:
         """
-        Get all quote currencies grouped by type.
+        Get all quote currency types and their associated symbols.
+        
+        Returns:
+            Dictionary mapping quote types to lists of symbols
         """
         result = {}
-        for quote, quote_type in self.quote_mappings.items():
-            if quote_type not in result:
-                result[quote_type] = []
-            result[quote_type].append(quote)
+        
+        for quote_type in QuoteCurrencyType:
+            symbols = []
+            for symbol, qt in self.quote_mappings.items():
+                if qt == quote_type:
+                    symbols.append(symbol)
+            result[quote_type] = symbols
+        
         return result 
