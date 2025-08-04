@@ -2,3 +2,8 @@
 *.py[cod]
 *$py.class
 xetrade.egg-info/
+
+# Mock data directories
+data/s3_mock/
+data/*.jsonl
+data/*.parquet
