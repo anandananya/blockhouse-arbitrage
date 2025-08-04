@@ -39,7 +39,7 @@ pip install -e .
 python FULL_DEMO.py
 ```
 
-### Individual Task Demos
+### Individual Task Demos For Testing
 ```bash
 # Task 1: Exchange Connectors
 python task1_details/task1_demo.py
@@ -71,7 +71,7 @@ python task5_details/task5_demo.py
 - Price impact analysis with order book walking
 - Mock exchange for testing
 
-**Demo**: `python task1_demo.py`
+**Demo**: `python task1_details/task1_demo.py`
 
 ** Status**: All requirements implemented and working
 
@@ -88,7 +88,7 @@ python task5_details/task5_demo.py
 
 **Demo**: `python FULL_DEMO.py` (Task 3 section)
 
-** Note**: `task2_demo.py` is actually about Symbol Mapping
+** Note**: `task2_details/task2_demo.py` is actually about Symbol Mapping
 
 ### Task 3: Position & PnL Monitoring 
 **Goal**: Real-time position tracking and PnL calculation
@@ -100,7 +100,7 @@ python task5_details/task5_demo.py
 - Mark price tracking
 - Unrealized profit/loss metrics
 
-**Demo**: `python task3_demo.py`
+**Demo**: `python task3_details/task3_demo.py`
 
 ### Task 4: Universal Symbol Mapper 
 **Goal**: Universal symbol normalization across exchanges
@@ -112,7 +112,7 @@ python task5_details/task5_demo.py
 - Reverse mapping (universal → exchange-specific)
 - Support for prefix/suffix variations (1000BONK → BONK)
 
-**Demo**: `python task4_demo.py`
+**Demo**: `python task4_details/task4_demo.py`
 
 ### Task 5: Historical Data Persistence 
 **Goal**: L2 order book capture for backtesting
@@ -124,7 +124,7 @@ python task5_details/task5_demo.py
 - High-precision timestamps
 - 10+ minute reliable operation
 
-**Demo**: `python task5_demo.py`
+**Demo**: `python task5_details/task5_demo.py`
 
 ** Issues**: Uses mock S3 storage, duration was set to 1 min (now fixed to 10 min)
 
