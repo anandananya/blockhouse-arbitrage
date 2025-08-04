@@ -226,29 +226,8 @@ class UniversalSymbolMapper:
         return self.asset_mappings.get(quote, quote)
     
     def get_quote_type(self, quote: str) -> QuoteCurrencyType:
-        """
-        Get the type of quote currency.
-        """
+        """Get the quote currency type for classification."""
         return self.quote_mappings.get(quote, QuoteCurrencyType.OTHER)
-    
-    def get_usd_equivalent_symbol(self, exchange_symbol: str, exchange: str = "unknown") -> str:
-        """
-        Get USD-equivalent universal symbol, normalizing all USD-equivalent stablecoins to USD.
-        
-        Example:
-        - 1000BONK-USD → BONK/USD
-        - BONK-USDT → BONK/USD (USDT normalized to USD)
-        - BONK-USDC → BONK/USD (USDC normalized to USD)
-        """
-        mapping = self.map_symbol(exchange_symbol, exchange)
-        
-        # If quote is USD-equivalent, normalize to USD
-        if mapping.quote_type in [QuoteCurrencyType.USD, QuoteCurrencyType.USDT, 
-                                 QuoteCurrencyType.USDC, QuoteCurrencyType.BUSD, 
-                                 QuoteCurrencyType.DAI]:
-            return f"{mapping.base_asset}/USD"
-        
-        return mapping.universal_symbol
 
     def map_symbol(self, exchange_symbol: str, exchange: str = "unknown") -> SymbolMapping:
         """

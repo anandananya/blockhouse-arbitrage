@@ -23,15 +23,17 @@ def task4_demo():
     mapper = UniversalSymbolMapper()
     
     # Step 1: Demonstrate the main requirement
-    print("1 Main Requirement: 1000BONK-USD vs BONK-USDT")
-    print("-" * 50)
+    print("1 Main Requirement: Universal Symbol Standardization")
+    print("-" * 55)
     
     test_cases = [
         ("1000BONK-USD", "derive"),
         ("BONK-USDT", "binance"),
+        ("BTCUSDT", "binance"),
+        ("XBT-USDT", "okx"),
     ]
     
-    print("Standard mapping (showing individual quote types):")
+    print("Universal format standardization:")
     for exchange_symbol, exchange in test_cases:
         mapping = mapper.map_symbol(exchange_symbol, exchange)
         print(f" {exchange_symbol} ({exchange}) → {mapping.universal_symbol}")
@@ -41,14 +43,11 @@ def task4_demo():
         print(f"   Confidence: {mapping.confidence:.2f}")
         print()
     
-    print("USD-equivalent mapping (both map to same underlying asset):")
-    for exchange_symbol, exchange in test_cases:
-        usd_symbol = mapper.get_usd_equivalent_symbol(exchange_symbol, exchange)
-        print(f" {exchange_symbol} ({exchange}) → {usd_symbol}")
-        print(f"   Both map to same underlying asset (BONK) with USD-equivalent quote!")
-        print()
-    
-    print(" Both symbols correctly map to BONK/USD - same underlying asset!")
+    print("✅ Universal format handles all standardizations:")
+    print("   - Prefix variations (1000BONK → BONK)")
+    print("   - Asset name variations (XBT → BTC)")
+    print("   - Separator variations (BTCUSDT → BTC/USDT)")
+    print("   - Quote currency variations (USD, USDT, USDC, etc.)")
     print()
     
     # Step 2: Demonstrate prefix handling
